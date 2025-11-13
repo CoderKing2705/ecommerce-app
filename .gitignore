@@ -1,0 +1,23 @@
+# Ignore node_modules from both backend and frontend
+**/node_modules/
+
+# Ignore build and dist folders
+**/dist/
+**/build/
+
+# Environment files
+**/.env
+**/.env.local
+
+# Logs
+**/logs/
+*.log
+
+# IDE / editor files
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
