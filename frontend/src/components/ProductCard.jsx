@@ -2,25 +2,31 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingCart, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 
-const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) => {
-    const [isWishlisted, setIsWishlisted] = useState(false);
+const ProductCard = ({ product, onViewDetails }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const { user } = useAuth();
+    const { addToCart, addToWishlist, isInCart, isInWishlist, loading } = useCart();
+    const navigate = useNavigate();
 
     const handleAddToCart = (e) => {
         e.stopPropagation();
-        if (onAddToCart) {
-            onAddToCart(product);
+        if (!user) {
+            navigate('/login');
+            return;
         }
+        addToCart(product);
     };
 
     const handleAddToWishlist = (e) => {
         e.stopPropagation();
-        setIsWishlisted(!isWishlisted);
-        if (onAddToWishlist) {
-            onAddToWishlist(product);
+        if (!user) {
+            navigate('/login');
+            return;
         }
+        addToWishlist(product);
     };
 
     const handleViewDetails = () => {
@@ -28,6 +34,9 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
             onViewDetails(product);
         }
     };
+
+    const isProductInCart = isInCart(product.id);
+    const isProductInWishlist = isInWishlist(product.id);
 
     return (
         <motion.div
@@ -57,17 +66,20 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
                 <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <button
                         onClick={handleAddToWishlist}
-                        className={`p-2 rounded-full shadow-md transition-colors ${isWishlisted
-                                ? 'bg-red-500 text-white'
-                                : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
-                            }`}
+                        disabled={loading || isProductInWishlist}
+                        className={`p-2 rounded-full shadow-md transition-all duration-300 ${isProductInWishlist
+                                ? 'bg-red-500 text-white cursor-default animate-pulse'
+                                : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500 hover:scale-110'
+                            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={isProductInWishlist ? "In wishlist - Go to wishlist" : "Add to wishlist"}
                     >
-                        <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
+                        <Heart className={`h-4 w-4 ${isProductInWishlist ? 'fill-current' : ''}`} />
                     </button>
 
                     <button
                         onClick={handleViewDetails}
-                        className="p-2 bg-white text-gray-600 rounded-full shadow-md hover:bg-blue-50 hover:text-blue-500 transition-colors"
+                        className="p-2 bg-white text-gray-600 rounded-full shadow-md hover:bg-blue-50 hover:text-blue-500 hover:scale-110 transition-all duration-300"
+                        title="View details"
                     >
                         <Eye className="h-4 w-4" />
                     </button>
@@ -79,6 +91,15 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
                         {product.category}
                     </span>
                 </div>
+
+                {/* Wishlist Badge */}
+                {isProductInWishlist && (
+                    <div className="absolute top-3 left-3 transform translate-y-8">
+                        <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                            In Wishlist
+                        </span>
+                    </div>
+                )}
 
                 {/* Stock Status */}
                 {product.stock_quantity <= 10 && product.stock_quantity > 0 && (
@@ -134,9 +155,12 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
                     <div className="flex space-x-2">
                         <button
                             onClick={handleAddToCart}
-                            disabled={product.stock_quantity === 0 || !user}
-                            className="bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-                            title={!user ? "Please login to add to cart" : "Add to cart"}
+                            disabled={product.stock_quantity === 0 || !user || loading || isProductInCart}
+                            className={`p-2 rounded-md transition-all duration-300 flex items-center justify-center ${isProductInCart
+                                    ? 'bg-green-500 text-white cursor-default scale-110'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 disabled:bg-gray-400 disabled:cursor-not-allowed'
+                                }`}
+                            title={isProductInCart ? "Already in cart" : "Add to cart"}
                         >
                             <ShoppingCart className="h-4 w-4" />
                         </button>
@@ -146,11 +170,14 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
                 {/* Add to Cart Button - Mobile */}
                 <button
                     onClick={handleAddToCart}
-                    disabled={product.stock_quantity === 0 || !user}
-                    className="w-full mt-3 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 md:hidden"
+                    disabled={product.stock_quantity === 0 || !user || loading || isProductInCart}
+                    className={`w-full mt-3 py-2 px-4 rounded-md transition-all duration-300 flex items-center justify-center gap-2 md:hidden ${isProductInCart
+                            ? 'bg-green-500 text-white cursor-default'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+                        }`}
                 >
                     <ShoppingCart className="h-4 w-4" />
-                    Add to Cart
+                    {isProductInCart ? 'In Cart' : 'Add to Cart'}
                 </button>
             </div>
         </motion.div>

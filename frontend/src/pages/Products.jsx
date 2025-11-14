@@ -70,36 +70,9 @@ const Products = () => {
         setFilteredProducts(filtered);
     }, [searchTerm, selectedCategory, sortBy, products]);
 
-    const handleAddToCart = async (product) => {
-        if (!user) {
-            alert('Please login to add items to cart');
-            return;
-        }
-
-        try {
-            // Use cartAPI to add product to cart
-            await cartAPI.add(product.id, 1);
-            alert('Product added to cart successfully!');
-        } catch (error) {
-            console.error('Error adding to cart:', error);
-            alert(handleAPIError(error));
-        }
-    };
-
-    const handleAddToWishlist = async (product) => {
-        if (!user) {
-            alert('Please login to add items to wishlist');
-            return;
-        }
-
-        try {
-            // Use wishlistAPI to add product to wishlist
-            await wishlistAPI.add(product.id);
-            alert('Product added to wishlist successfully!');
-        } catch (error) {
-            console.error('Error adding to wishlist:', error);
-            alert(handleAPIError(error));
-        }
+    const handleViewDetails = (product) => {
+        // You can implement a product details modal or page here
+        console.log('View details:', product);
     };
 
     if (loading) {
@@ -190,8 +163,7 @@ const Products = () => {
                         <ProductCard
                             key={product.id}
                             product={product}
-                            onAddToCart={handleAddToCart}
-                            onAddToWishlist={handleAddToWishlist}
+                            onViewDetails={handleViewDetails}
                         />
                     ))}
                 </motion.div>

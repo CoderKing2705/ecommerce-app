@@ -1,6 +1,7 @@
 import pkg from 'pg';
 const { Pool } = pkg;
-
+import dotenv from "dotenv";
+dotenv.config();
 // Log environment variables for debugging (remove in production)
 console.log('Database configuration:', {
     host: process.env.DB_HOST,

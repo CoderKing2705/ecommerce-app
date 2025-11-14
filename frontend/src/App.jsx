@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
+import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -11,44 +13,55 @@ import Analytics from './pages/Analytics';
 import Contact from './pages/Contact';
 import OAuthSuccess from './pages/OAuthSuccess';
 import ProtectedRoute from './components/ProtectedRoute';
+import Wishlist from './pages/Wishlist';
 
 function App() {
   return (
-    <React.StrictMode>
-      <AuthProvider>
+    <AuthProvider>
+      <CartProvider>
         <Router>
           <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
             <Navbar />
-            <main>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/auth/success" element={<OAuthSuccess />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/analytics"
-                  element={
-                    <ProtectedRoute adminOnly={true}>
-                      <Analytics />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </main>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  borderRadius: '10px',
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/auth/success" element={<OAuthSuccess />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/wishlist" element={<Wishlist />} />
+            </Routes>
           </div>
         </Router>
-      </AuthProvider>
-    </React.StrictMode>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

@@ -28,8 +28,8 @@ console.log('   DB_HOST:', process.env.DB_HOST);
 console.log('   DB_PORT:', process.env.DB_PORT);
 console.log('   DB_NAME:', process.env.DB_NAME);
 console.log('   DB_USER:', process.env.DB_USER);
-console.log('   DB_PASSWORD:', process.env.DB_PASSWORD ? '***' : 'NOT SET');
-console.log('   JWT_SECRET:', process.env.JWT_SECRET ? '***' : 'NOT SET');
+console.log('   DB_PASSWORD:', process.env.DB_PASSWORD);
+console.log('   JWT_SECRET:', process.env.JWT_SECRET);
 
 import express from 'express';
 import cors from 'cors';
@@ -40,6 +40,7 @@ import { connectDB } from './config/database.js';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import cartRoutes from './routes/cart.js';
+import wishlistRoutes from './routes/wishlist.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -65,6 +66,7 @@ app.use(passport.initialize());
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,31 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Heart, Package, CreditCard, User, TrendingUp } from 'lucide-react';
+import { ShoppingCart, Heart, Package, CreditCard, User, TrendingUp, Trash2, Plus, Minus } from 'lucide-react';
 
 const Dashboard = () => {
     const { user } = useAuth();
+    const {
+        cart,
+        wishlist,
+        getCartTotal,
+        getCartItemsCount,
+        removeFromCart,
+        removeFromWishlist,
+        updateCartQuantity,
+        addToCart
+    } = useCart();
+
     const [activeTab, setActiveTab] = useState('overview');
-    const [cartItems, setCartItems] = useState([]);
-    const [wishlistItems, setWishlistItems] = useState([]);
 
-    // Mock data - replace with actual API calls
-    useEffect(() => {
-        const mockCartItems = [
-            { id: 1, product: { name: 'Classic White T-Shirt', price: 29.99, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop' }, quantity: 2 },
-            { id: 2, product: { name: 'Designer Blue Jeans', price: 89.99, image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop' }, quantity: 1 }
-        ];
+    const totalCartValue = getCartTotal();
+    const cartItemsCount = getCartItemsCount();
 
-        const mockWishlistItems = [
-            { id: 1, product: { name: 'Sports Jacket', price: 129.99, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=400&fit=crop' } },
-            { id: 2, product: { name: 'Running Shoes', price: 79.99, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop' } }
-        ];
+    const handleRemoveFromCart = async (cartItemId) => {
+        await removeFromCart(cartItemId);
+    };
 
-        setCartItems(mockCartItems);
-        setWishlistItems(mockWishlistItems);
-    }, []);
+    const handleRemoveFromWishlist = async (wishlistItemId) => {
+        await removeFromWishlist(wishlistItemId);
+    };
 
-    const totalCartValue = cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    const handleIncreaseQuantity = async (cartItem) => {
+        await updateCartQuantity(cartItem.id, cartItem.quantity + 1);
+    };
+
+    const handleDecreaseQuantity = async (cartItem) => {
+        await updateCartQuantity(cartItem.id, cartItem.quantity - 1);
+    };
+
+    const handleMoveToCart = async (wishlistItem) => {
+        // Add to cart and remove from wishlist
+        await addToCart(wishlistItem, 1);
+        await removeFromWishlist(wishlistItem.id);
+    };
 
     return (
         <div className="min-h-screen py-8">
@@ -50,7 +67,7 @@ const Dashboard = () => {
                             <ShoppingCart className="h-8 w-8 text-blue-600" />
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Cart Items</p>
-                                <p className="text-2xl font-bold text-gray-800">{cartItems.length}</p>
+                                <p className="text-2xl font-bold text-gray-800">{cartItemsCount}</p>
                             </div>
                         </div>
                     </motion.div>
@@ -63,7 +80,7 @@ const Dashboard = () => {
                             <Heart className="h-8 w-8 text-pink-600" />
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Wishlist Items</p>
-                                <p className="text-2xl font-bold text-gray-800">{wishlistItems.length}</p>
+                                <p className="text-2xl font-bold text-gray-800">{wishlist.length}</p>
                             </div>
                         </div>
                     </motion.div>
@@ -123,7 +140,7 @@ const Dashboard = () => {
                             <div className="space-y-6">
                                 <h3 className="text-xl font-semibold text-gray-800">Recent Activity</h3>
                                 <div className="space-y-4">
-                                    {cartItems.slice(0, 3).map((item) => (
+                                    {cart.slice(0, 3).map((item) => (
                                         <motion.div
                                             key={item.id}
                                             initial={{ opacity: 0, x: -20 }}
@@ -131,19 +148,49 @@ const Dashboard = () => {
                                             className="flex items-center p-4 border border-gray-200 rounded-lg"
                                         >
                                             <img
-                                                src={item.product.image}
-                                                alt={item.product.name}
+                                                src={item.image_url}
+                                                alt={item.name}
                                                 className="h-12 w-12 object-cover rounded-md"
                                             />
                                             <div className="ml-4 flex-1">
-                                                <h4 className="font-medium text-gray-800">{item.product.name}</h4>
-                                                <p className="text-gray-600 text-sm">Added to cart</p>
+                                                <h4 className="font-medium text-gray-800">{item.name}</h4>
+                                                <p className="text-gray-600 text-sm">Added to cart • Qty: {item.quantity}</p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-semibold text-gray-800">${item.product.price}</p>
+                                                <p className="font-semibold text-gray-800">${(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
                                         </motion.div>
                                     ))}
+
+                                    {wishlist.slice(0, 3).map((item) => (
+                                        <motion.div
+                                            key={item.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="flex items-center p-4 border border-gray-200 rounded-lg"
+                                        >
+                                            <img
+                                                src={item.image_url}
+                                                alt={item.name}
+                                                className="h-12 w-12 object-cover rounded-md"
+                                            />
+                                            <div className="ml-4 flex-1">
+                                                <h4 className="font-medium text-gray-800">{item.name}</h4>
+                                                <p className="text-gray-600 text-sm">Added to wishlist</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-semibold text-gray-800">${item.price}</p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+
+                                    {(cart.length === 0 && wishlist.length === 0) && (
+                                        <div className="text-center py-8">
+                                            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                            <p className="text-gray-500">No recent activity</p>
+                                            <p className="text-gray-400 text-sm mt-1">Start shopping to see your activity here</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -151,14 +198,15 @@ const Dashboard = () => {
                         {activeTab === 'cart' && (
                             <div>
                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Cart</h3>
-                                {cartItems.length === 0 ? (
+                                {cart.length === 0 ? (
                                     <div className="text-center py-8">
                                         <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                         <p className="text-gray-500">Your cart is empty</p>
+                                        <p className="text-gray-400 text-sm mt-1">Add some products to get started</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {cartItems.map((item) => (
+                                        {cart.map((item) => (
                                             <motion.div
                                                 key={item.id}
                                                 initial={{ opacity: 0, x: -20 }}
@@ -167,20 +215,41 @@ const Dashboard = () => {
                                             >
                                                 <div className="flex items-center">
                                                     <img
-                                                        src={item.product.image}
-                                                        alt={item.product.name}
+                                                        src={item.image_url}
+                                                        alt={item.name}
                                                         className="h-16 w-16 object-cover rounded-md"
                                                     />
                                                     <div className="ml-4">
-                                                        <h4 className="font-medium text-gray-800">{item.product.name}</h4>
-                                                        <p className="text-gray-600">Quantity: {item.quantity}</p>
+                                                        <h4 className="font-medium text-gray-800">{item.name}</h4>
+                                                        <p className="text-gray-600">Size: {item.size} • Color: {item.color}</p>
+                                                        <div className="flex items-center space-x-2 mt-2">
+                                                            <button
+                                                                onClick={() => handleDecreaseQuantity(item)}
+                                                                className="p-1 rounded-md border border-gray-300 hover:bg-gray-100"
+                                                                disabled={item.quantity <= 1}
+                                                            >
+                                                                <Minus className="h-3 w-3" />
+                                                            </button>
+                                                            <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                                                            <button
+                                                                onClick={() => handleIncreaseQuantity(item)}
+                                                                className="p-1 rounded-md border border-gray-300 hover:bg-gray-100"
+                                                            >
+                                                                <Plus className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-semibold text-gray-800">
-                                                        ${(item.product.price * item.quantity).toFixed(2)}
+                                                        ${(item.price * item.quantity).toFixed(2)}
                                                     </p>
-                                                    <button className="text-red-600 text-sm hover:text-red-800 mt-2">
+                                                    <p className="text-sm text-gray-600">${item.price} each</p>
+                                                    <button
+                                                        onClick={() => handleRemoveFromCart(item.id)}
+                                                        className="text-red-600 text-sm hover:text-red-800 mt-2 flex items-center justify-end w-full"
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" />
                                                         Remove
                                                     </button>
                                                 </div>
@@ -188,7 +257,7 @@ const Dashboard = () => {
                                         ))}
                                         <div className="border-t pt-4 mt-4">
                                             <div className="flex justify-between items-center text-lg font-semibold">
-                                                <span>Total:</span>
+                                                <span>Total ({cartItemsCount} items):</span>
                                                 <span>${totalCartValue.toFixed(2)}</span>
                                             </div>
                                             <button className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
@@ -203,14 +272,15 @@ const Dashboard = () => {
                         {activeTab === 'wishlist' && (
                             <div>
                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Wishlist</h3>
-                                {wishlistItems.length === 0 ? (
+                                {wishlist.length === 0 ? (
                                     <div className="text-center py-8">
                                         <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                         <p className="text-gray-500">Your wishlist is empty</p>
+                                        <p className="text-gray-400 text-sm mt-1">Add some products to your wishlist</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {wishlistItems.map((item) => (
+                                        {wishlist.map((item) => (
                                             <motion.div
                                                 key={item.id}
                                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -218,24 +288,81 @@ const Dashboard = () => {
                                                 className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                                             >
                                                 <img
-                                                    src={item.product.image}
-                                                    alt={item.product.name}
+                                                    src={item.image_url}
+                                                    alt={item.name}
                                                     className="h-40 w-full object-cover rounded-md mb-3"
                                                 />
-                                                <h4 className="font-medium text-gray-800 mb-1">{item.product.name}</h4>
-                                                <p className="text-gray-600 mb-3">${item.product.price}</p>
+                                                <h4 className="font-medium text-gray-800 mb-1">{item.name}</h4>
+                                                <p className="text-gray-600 mb-2">${item.price}</p>
+                                                <p className="text-sm text-gray-500 mb-3">Size: {item.size} • Color: {item.color}</p>
                                                 <div className="flex space-x-2">
-                                                    <button className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                                                    <button
+                                                        onClick={() => handleMoveToCart(item)}
+                                                        className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                                                    >
                                                         Add to Cart
                                                     </button>
-                                                    <button className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors">
-                                                        Remove
+                                                    <button
+                                                        onClick={() => handleRemoveFromWishlist(item.id)}
+                                                        className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 </div>
                                             </motion.div>
                                         ))}
                                     </div>
                                 )}
+                            </div>
+                        )}
+
+                        {activeTab === 'activity' && (
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h3>
+                                <div className="space-y-4">
+                                    {[...cart, ...wishlist]
+                                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                        .slice(0, 10)
+                                        .map((item, index) => (
+                                            <motion.div
+                                                key={`${item.id}-${index}`}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.1 }}
+                                                className="flex items-center p-4 border border-gray-200 rounded-lg"
+                                            >
+                                                <img
+                                                    src={item.image_url}
+                                                    alt={item.name}
+                                                    className="h-12 w-12 object-cover rounded-md"
+                                                />
+                                                <div className="ml-4 flex-1">
+                                                    <h4 className="font-medium text-gray-800">{item.name}</h4>
+                                                    <p className="text-gray-600 text-sm">
+                                                        {item.quantity ? `Added to cart • Qty: ${item.quantity}` : 'Added to wishlist'} •
+                                                        ${item.quantity ? (item.price * item.quantity).toFixed(2) : item.price}
+                                                    </p>
+                                                    <p className="text-gray-400 text-xs mt-1">
+                                                        {new Date(item.created_at).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+
+                                    {cart.length === 0 && wishlist.length === 0 && (
+                                        <div className="text-center py-8">
+                                            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                            <p className="text-gray-500">No activity yet</p>
+                                            <p className="text-gray-400 text-sm mt-1">Your shopping activity will appear here</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
