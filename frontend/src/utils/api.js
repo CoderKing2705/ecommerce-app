@@ -1,0 +1,118 @@
+import axios from 'axios';
+
+// Create axios instance with base configuration
+const api = axios.create({
+    baseURL: 'http://localhost:5000/api',
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor to handle common errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+// Auth API
+export const authAPI = {
+    login: (email, password) => api.post('/auth/login', { email, password }),
+    register: (email, password, name) => api.post('/auth/register', { email, password, name }),
+    getMe: () => api.get('/auth/me'),
+};
+
+// Products API
+export const productsAPI = {
+    getAll: (params = {}) => api.get('/products', { params }),
+    getById: (id) => api.get(`/products/${id}`),
+    create: (productData) => api.post('/products', productData),
+    update: (id, productData) => api.put(`/products/${id}`, productData),
+    delete: (id) => api.delete(`/products/${id}`),
+};
+
+// Cart API
+export const cartAPI = {
+    get: () => api.get('/cart'),
+    add: (productId, quantity = 1) => api.post('/cart', { product_id: productId, quantity }),
+    remove: (cartItemId) => api.delete(`/cart/${cartItemId}`),
+    update: (cartItemId, quantity) => api.put(`/cart/${cartItemId}`, { quantity }),
+};
+
+// Wishlist API (you'll need to create these endpoints in backend)
+export const wishlistAPI = {
+    get: () => api.get('/wishlist'),
+    add: (productId) => api.post('/wishlist', { product_id: productId }),
+    remove: (wishlistItemId) => api.delete(`/wishlist/${wishlistItemId}`),
+};
+
+// Users API (admin only)
+export const usersAPI = {
+    getAll: () => api.get('/users'),
+    getById: (id) => api.get(`/users/${id}`),
+    update: (id, userData) => api.put(`/users/${id}`, userData),
+    delete: (id) => api.delete(`/users/${id}`),
+};
+
+// Analytics API
+export const analyticsAPI = {
+    getSales: () => api.get('/analytics/sales'),
+    getUsers: () => api.get('/analytics/users'),
+    getProducts: () => api.get('/analytics/products'),
+};
+
+// Utility functions
+export const handleAPIError = (error) => {
+    if (error.response) {
+        // Server responded with error status
+        return error.response.data.message || 'Something went wrong';
+    } else if (error.request) {
+        // Request made but no response received
+        return 'Network error. Please check your connection.';
+    } else {
+        // Something else happened
+        return error.message || 'Something went wrong';
+    }
+};
+
+export const isAdmin = (user) => {
+    return user?.role === 'ADMIN';
+};
+
+export const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+    }).format(price);
+};
+
+export const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+};
+
+export default api;
