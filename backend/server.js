@@ -1,5 +1,35 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+// Get current directory in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables with explicit path
+const envPath = path.resolve(__dirname, '.env');
+console.log('📁 Looking for .env file at:', envPath);
+
+// Check if .env file exists
+if (fs.existsSync(envPath)) {
+    console.log('✅ .env file found');
+    dotenv.config({ path: envPath });
+} else {
+    console.log('❌ .env file NOT found at:', envPath);
+    console.log('💡 Please create .env file in backend directory');
+    process.exit(1);
+}
+
+// Debug: Log environment variables (without password)
+console.log('🔧 Loaded environment variables:');
+console.log('   PORT:', process.env.PORT);
+console.log('   DB_HOST:', process.env.DB_HOST);
+console.log('   DB_PORT:', process.env.DB_PORT);
+console.log('   DB_NAME:', process.env.DB_NAME);
+console.log('   DB_USER:', process.env.DB_USER);
+console.log('   DB_PASSWORD:', process.env.DB_PASSWORD ? '***' : 'NOT SET');
+console.log('   JWT_SECRET:', process.env.JWT_SECRET ? '***' : 'NOT SET');
 
 import express from 'express';
 import cors from 'cors';
@@ -15,7 +45,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to database
-connectDB();
+console.log('🔄 Connecting to database...');
+connectDB().then(() => {
+    console.log('✅ Database connection established');
+});
 
 // Import passport config AFTER environment variables are loaded
 import './config/passport.js';
@@ -35,21 +68,27 @@ app.use('/api/cart', cartRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ message: 'E-commerce API is running!' });
+    res.json({
+        message: 'E-commerce API is running!',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV
+    });
 });
 
-// Test route to check environment variables
-app.get('/api/debug-env', (req, res) => {
+// Debug endpoint
+app.get('/api/debug/env', (req, res) => {
     res.json({
-        hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
-        hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-        hasJwtSecret: !!process.env.JWT_SECRET,
-        clientUrl: process.env.CLIENT_URL
+        dbHost: process.env.DB_HOST,
+        dbPort: process.env.DB_PORT,
+        dbName: process.env.DB_NAME,
+        dbUser: process.env.DB_USER,
+        hasDbPassword: !!process.env.DB_PASSWORD,
+        nodeEnv: process.env.NODE_ENV
     });
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`Google Client ID configured: ${!!process.env.GOOGLE_CLIENT_ID}`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🔗 Client URL: ${process.env.CLIENT_URL}`);
 });

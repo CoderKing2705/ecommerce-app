@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Heart, ShoppingCart } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
+import { productsAPI, handleAPIError } from '../utils/api';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Products = () => {
     const [products, setProducts] = useState([]);
@@ -11,52 +13,40 @@ const Products = () => {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortBy, setSortBy] = useState('name');
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const { user } = useAuth();
 
     const categories = ['All', 'T-Shirts', 'Jeans', 'Dresses', 'Jackets', 'Shoes', 'Accessories'];
 
-    const sampleProducts = [
-        {
-            id: 1,
-            name: "Classic White T-Shirt",
-            price: 29.99,
-            image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
-            category: "T-Shirts",
-            brand: "BasicWear",
-            size: "M",
-            color: "White",
-            stock_quantity: 50
-        },
-        {
-            id: 2,
-            name: "Designer Blue Jeans",
-            price: 89.99,
-            image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop",
-            category: "Jeans",
-            brand: "DenimCo",
-            size: "32",
-            color: "Blue",
-            stock_quantity: 30
-        },
-        // ... include all your sample products from earlier
-    ];
-
+    // Fetch products from backend API
     useEffect(() => {
-        // Simulate API call
-        setTimeout(() => {
-            setProducts(sampleProducts);
-            setFilteredProducts(sampleProducts);
-            setLoading(false);
-        }, 1000);
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                setError('');
+                const response = await productsAPI.getAll();
+                setProducts(response.data);
+                setFilteredProducts(response.data);
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                setError(handleAPIError(error));
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
     }, []);
 
+    // Filter and sort products
     useEffect(() => {
         let filtered = products;
 
         if (searchTerm) {
             filtered = filtered.filter(product =>
                 product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.brand.toLowerCase().includes(searchTerm.toLowerCase())
+                product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.category?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
@@ -80,28 +70,55 @@ const Products = () => {
         setFilteredProducts(filtered);
     }, [searchTerm, selectedCategory, sortBy, products]);
 
-    const handleAddToCart = (product) => {
+    const handleAddToCart = async (product) => {
         if (!user) {
             alert('Please login to add items to cart');
             return;
         }
-        console.log('Added to cart:', product);
-        // Implement actual cart functionality here
+
+        try {
+            // Use cartAPI to add product to cart
+            await cartAPI.add(product.id, 1);
+            alert('Product added to cart successfully!');
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert(handleAPIError(error));
+        }
     };
 
-    const handleAddToWishlist = (product) => {
+    const handleAddToWishlist = async (product) => {
         if (!user) {
             alert('Please login to add items to wishlist');
             return;
         }
-        console.log('Added to wishlist:', product);
-        // Implement actual wishlist functionality here
+
+        try {
+            // Use wishlistAPI to add product to wishlist
+            await wishlistAPI.add(product.id);
+            alert('Product added to wishlist successfully!');
+        } catch (error) {
+            console.error('Error adding to wishlist:', error);
+            alert(handleAPIError(error));
+        }
     };
 
     if (loading) {
+        return <LoadingSpinner text="Loading products..." />;
+    }
+
+    if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="text-center">
+                    <div className="text-red-600 text-xl mb-4">Error loading products</div>
+                    <div className="text-gray-600">{error}</div>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                        Retry
+                    </button>
+                </div>
             </div>
         );
     }
@@ -126,7 +143,7 @@ const Products = () => {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                             <input
                                 type="text"
-                                placeholder="Search products..."
+                                placeholder="Search products by name, brand, or category..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -157,6 +174,13 @@ const Products = () => {
                     </div>
                 </div>
 
+                {/* Products Count */}
+                <div className="mb-6">
+                    <p className="text-gray-600">
+                        Showing {filteredProducts.length} of {products.length} products
+                    </p>
+                </div>
+
                 {/* Products Grid */}
                 <motion.div
                     layout
@@ -172,9 +196,11 @@ const Products = () => {
                     ))}
                 </motion.div>
 
-                {filteredProducts.length === 0 && (
+                {filteredProducts.length === 0 && !loading && (
                     <div className="text-center py-12">
-                        <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
+                        <div className="text-gray-400 text-6xl mb-4">🔍</div>
+                        <p className="text-gray-500 text-lg mb-2">No products found</p>
+                        <p className="text-gray-400">Try adjusting your search or filter criteria</p>
                     </div>
                 )}
             </div>
