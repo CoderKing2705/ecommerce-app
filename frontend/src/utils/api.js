@@ -23,15 +23,11 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle common errors
+// Response interceptor - REMOVE the auto-redirect to avoid loops
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Token expired or invalid
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-        }
+        // Don't auto-redirect, let components handle 401
         return Promise.reject(error);
     }
 );

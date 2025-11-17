@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
@@ -26,7 +26,7 @@ const Products = () => {
                 setError('');
                 const response = await productsAPI.getAll();
                 setProducts(response.data);
-                setFilteredProducts(response.data);
+                setFilteredProducts(response.data); // Set initial filtered products
             } catch (error) {
                 console.error('Error fetching products:', error);
                 setError(handleAPIError(error));
@@ -39,8 +39,8 @@ const Products = () => {
     }, []);
 
     // Filter and sort products
-    useEffect(() => {
-        let filtered = products;
+    const updateFilteredProducts = useCallback(() => {
+        let filtered = [...products]; // Create a copy to avoid mutating original
 
         if (searchTerm) {
             filtered = filtered.filter(product =>
@@ -55,7 +55,7 @@ const Products = () => {
         }
 
         // Sort products
-        filtered = [...filtered].sort((a, b) => {
+        filtered = filtered.sort((a, b) => {
             switch (sortBy) {
                 case 'price-low':
                     return a.price - b.price;
@@ -69,6 +69,12 @@ const Products = () => {
 
         setFilteredProducts(filtered);
     }, [searchTerm, selectedCategory, sortBy, products]);
+
+    useEffect(() => {
+        if (products.length > 0) {
+            updateFilteredProducts();
+        }
+    }, [updateFilteredProducts, products.length]);
 
     const handleViewDetails = (product) => {
         // You can implement a product details modal or page here

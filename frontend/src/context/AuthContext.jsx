@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -18,30 +18,51 @@ export const AuthProvider = ({ children }) => {
     // Set base URL for API calls
     useEffect(() => {
         axios.defaults.baseURL = 'http://localhost:5000/api';
+
+        // Add response interceptor to handle 401 errors
+        const interceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response?.status === 401) {
+                    console.log('Auto-logout due to 401 error');
+                    localStorage.removeItem('token');
+                    delete axios.defaults.headers.common['Authorization'];
+                    setUser(null);
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+        };
     }, []);
 
-    useEffect(() => {
+    const verifyToken = useCallback(async () => {
         const token = localStorage.getItem('token');
-        if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            verifyToken();
-        } else {
-            setLoading(false);
-        }
-    }, []);
 
-    const verifyToken = async () => {
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
         try {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             const response = await axios.get('/auth/me');
             setUser(response.data);
         } catch (error) {
-            console.error('Token verification failed:', error);
+            console.log('Token invalid, clearing auth...');
             localStorage.removeItem('token');
             delete axios.defaults.headers.common['Authorization'];
+            setUser(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        verifyToken();
+    }, [verifyToken]);
 
     const login = async (email, password) => {
         try {

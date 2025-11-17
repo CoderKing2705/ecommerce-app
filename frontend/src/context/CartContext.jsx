@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { cartAPI, wishlistAPI } from '../utils/api';
+import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext();
@@ -16,47 +17,71 @@ export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState([]);
     const [wishlist, setWishlist] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
 
-    // Fetch cart and wishlist on app load
+    // Only fetch cart/wishlist when user is authenticated
     useEffect(() => {
-        fetchCart();
-        fetchWishlist();
-    }, []);
+        if (user) {
+            console.log('User authenticated, fetching cart and wishlist...');
+            fetchCart();
+            fetchWishlist();
+        } else {
+            console.log('No user, clearing cart and wishlist...');
+            setCart([]);
+            setWishlist([]);
+        }
+    }, [user]); // Only depend on user
 
     const fetchCart = async () => {
+        if (!user) return;
+
         try {
             const response = await cartAPI.get();
             setCart(response.data);
         } catch (error) {
-            console.error('Error fetching cart:', error);
+            console.log('Failed to fetch cart:', error.response?.status);
+            // Don't set state on error to avoid loops
+            if (error.response?.status !== 401) {
+                setCart([]);
+            }
         }
     };
 
     const fetchWishlist = async () => {
+        if (!user) return;
+
         try {
             const response = await wishlistAPI.get();
             setWishlist(response.data);
         } catch (error) {
-            console.error('Error fetching wishlist:', error);
+            console.log('Failed to fetch wishlist:', error.response?.status);
+            // Don't set state on error to avoid loops
+            if (error.response?.status !== 401) {
+                setWishlist([]);
+            }
         }
     };
 
     const addToCart = async (product, quantity = 1) => {
+        if (!user) {
+            toast.error('Please login to add items to cart');
+            return;
+        }
+
         try {
             setLoading(true);
             await cartAPI.add(product.id, quantity);
-            await fetchCart(); // Refresh cart data
+            await fetchCart();
             toast.success(`${product.name} added to cart!`, {
                 icon: '🛒',
-                style: {
-                    borderRadius: '10px',
-                    background: '#333',
-                    color: '#fff',
-                },
             });
         } catch (error) {
             console.error('Error adding to cart:', error);
-            toast.error('Failed to add item to cart');
+            if (error.response?.status === 401) {
+                toast.error('Please login again');
+            } else {
+                toast.error('Failed to add item to cart');
+            }
         } finally {
             setLoading(false);
         }
@@ -66,7 +91,7 @@ export const CartProvider = ({ children }) => {
         try {
             setLoading(true);
             await cartAPI.remove(cartItemId);
-            await fetchCart(); // Refresh cart data
+            setCart(prev => prev.filter(item => item.id !== cartItemId));
             toast.success('Item removed from cart!');
         } catch (error) {
             console.error('Error removing from cart:', error);
@@ -84,7 +109,9 @@ export const CartProvider = ({ children }) => {
             }
 
             await cartAPI.update(cartItemId, quantity);
-            await fetchCart(); // Refresh cart data
+            setCart(prev => prev.map(item =>
+                item.id === cartItemId ? { ...item, quantity } : item
+            ));
         } catch (error) {
             console.error('Error updating cart quantity:', error);
             toast.error('Failed to update quantity');
@@ -92,21 +119,25 @@ export const CartProvider = ({ children }) => {
     };
 
     const addToWishlist = async (product) => {
+        if (!user) {
+            toast.error('Please login to add items to wishlist');
+            return;
+        }
+
         try {
             setLoading(true);
             await wishlistAPI.add(product.id);
-            await fetchWishlist(); // Refresh wishlist data
+            await fetchWishlist();
             toast.success(`${product.name} added to wishlist!`, {
                 icon: '❤️',
-                style: {
-                    borderRadius: '10px',
-                    background: '#333',
-                    color: '#fff',
-                },
             });
         } catch (error) {
             console.error('Error adding to wishlist:', error);
-            toast.error('Failed to add item to wishlist');
+            if (error.response?.status === 401) {
+                toast.error('Please login again');
+            } else {
+                toast.error('Failed to add item to wishlist');
+            }
         } finally {
             setLoading(false);
         }
@@ -116,7 +147,7 @@ export const CartProvider = ({ children }) => {
         try {
             setLoading(true);
             await wishlistAPI.remove(wishlistItemId);
-            await fetchWishlist(); // Refresh wishlist data
+            setWishlist(prev => prev.filter(item => item.id !== wishlistItemId));
             toast.success('Item removed from wishlist!');
         } catch (error) {
             console.error('Error removing from wishlist:', error);
@@ -144,23 +175,6 @@ export const CartProvider = ({ children }) => {
         return cart.reduce((total, item) => total + item.quantity, 0);
     };
 
-    const clearCart = async () => {
-        try {
-            setLoading(true);
-            // Remove all cart items one by one (you might want to add a bulk delete endpoint)
-            for (const item of cart) {
-                await cartAPI.remove(item.id);
-            }
-            await fetchCart();
-            toast.success('Cart cleared!');
-        } catch (error) {
-            console.error('Error clearing cart:', error);
-            toast.error('Failed to clear cart');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const value = {
         cart,
         wishlist,
@@ -174,20 +188,6 @@ export const CartProvider = ({ children }) => {
         isInWishlist,
         getCartTotal,
         getCartItemsCount,
-        clearCart,
-        fetchCart,
-        fetchWishlist
-    };
-
-    // Add this function to the CartContext
-    const checkWishlistStatus = async (productId) => {
-        try {
-            const response = await wishlistAPI.check(productId);
-            return response.data.inWishlist;
-        } catch (error) {
-            console.error('Error checking wishlist status:', error);
-            return false;
-        }
     };
 
     return (
