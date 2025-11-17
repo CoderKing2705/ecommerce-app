@@ -44,6 +44,7 @@ export const getProductById = async (req, res) => {
 
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Get product by ID error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

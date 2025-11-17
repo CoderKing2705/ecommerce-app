@@ -3,6 +3,16 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../config/database.js';
 import { validationResult } from 'express-validator';
 
+
+
+const updateLastLogin = async (userId) => {
+    await pool.query(
+        'UPDATE users SET last_login = NOW() WHERE id = $1',
+        [userId]
+    );
+};
+
+
 export const register = async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -80,6 +90,8 @@ export const login = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        await updateLastLogin(user.rows[0].id);
+        
         res.json({
             token,
             user: {

@@ -14,6 +14,10 @@ import Contact from './pages/Contact';
 import OAuthSuccess from './pages/OAuthSuccess';
 import ProtectedRoute from './components/ProtectedRoute';
 import Wishlist from './pages/Wishlist';
+import ProductDetails from './pages/ProductDetails';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ManageProducts from './pages/admin/ManageProducts';
+import ManageUsers from './pages/admin/ManageUsers';
 
 function App() {
   return (
@@ -57,6 +61,31 @@ function App() {
                 }
               />
               <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/products"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <ManageProducts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <ManageUsers />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </div>
         </Router>

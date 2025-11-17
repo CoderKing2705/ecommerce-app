@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
-const ProductCard = ({ product, onViewDetails }) => {
+const ProductCard = ({ product }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const { user } = useAuth();
     const { addToCart, addToWishlist, isInCart, isInWishlist, loading } = useCart();
@@ -29,10 +29,13 @@ const ProductCard = ({ product, onViewDetails }) => {
         addToWishlist(product);
     };
 
-    const handleViewDetails = () => {
-        if (onViewDetails) {
-            onViewDetails(product);
-        }
+    const handleViewDetails = (e) => {
+        e.stopPropagation();
+        navigate(`/product/${product.id}`);
+    };
+
+    const handleCardClick = () => {
+        navigate(`/product/${product.id}`);
     };
 
     const isProductInCart = isInCart(product.id);
@@ -43,7 +46,8 @@ const ProductCard = ({ product, onViewDetails }) => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group"
+            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer"
+            onClick={handleCardClick}
         >
             {/* Product Image */}
             <div className="relative overflow-hidden">

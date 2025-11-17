@@ -13,7 +13,8 @@ import {
     Heart,
     LogOut,
     Settings,
-    Package
+    Package,
+    ChevronDown
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -29,7 +30,17 @@ const Navbar = () => {
         { name: 'Products', path: '/products' },
         { name: 'Wishlist', path: '/wishlist' },
         { name: 'Dashboard', path: '/dashboard' },
-        ...(user?.role === 'ADMIN' ? [{ name: 'Analytics', path: '/analytics' }] : []),
+        ...(user?.role === 'ADMIN' ? [
+            {
+                name: 'Admin',
+                path: '#',
+                children: [
+                    { name: 'Dashboard', path: '/admin/dashboard' },
+                    { name: 'Manage Products', path: '/admin/products' },
+                    { name: 'Manage Users', path: '/admin/users' },
+                ]
+            }
+        ] : []),
         { name: 'Contact', path: '/contact' },
     ];
 
@@ -52,6 +63,49 @@ const Navbar = () => {
     const cartItemsCount = getCartItemsCount();
     const wishlistCount = wishlist.length;
 
+    const renderNavItem = (item) => {
+        if (item.children) {
+            return (
+                <div key={item.name} className="relative group">
+                    <button className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">
+                        {item.name}
+                        <ChevronDown className="h-4 w-4 ml-1" />
+                    </button>
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        {item.children.map((child) => (
+                            <Link
+                                key={child.name}
+                                to={child.path}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                            >
+                                {child.name}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <Link
+                key={item.name}
+                to={item.path}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors relative ${location.pathname === item.path
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-gray-700 hover:text-blue-600'
+                    }`}
+            >
+                {item.name}
+                {location.pathname === item.path && (
+                    <motion.div
+                        layoutId="navbar-indicator"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                    />
+                )}
+            </Link>
+        );
+    };
+
     return (
         <nav className="bg-white shadow-lg sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,25 +123,9 @@ const Navbar = () => {
                     </div>
 
                     {/* Desktop Menu */}
+                    {/* Desktop Menu */}
                     <div className="hidden md:flex items-center space-x-8">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.name}
-                                to={item.path}
-                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors relative ${location.pathname === item.path
-                                        ? 'text-blue-600 bg-blue-50'
-                                        : 'text-gray-700 hover:text-blue-600'
-                                    }`}
-                            >
-                                {item.name}
-                                {location.pathname === item.path && (
-                                    <motion.div
-                                        layoutId="navbar-indicator"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                                    />
-                                )}
-                            </Link>
-                        ))}
+                        {navItems.map(renderNavItem)}
                     </div>
 
                     {/* Desktop Actions */}
@@ -166,8 +204,8 @@ const Navbar = () => {
                                                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                                                     <div className="flex items-center mt-1">
                                                         <div className={`text-xs px-2 py-1 rounded-full ${user.role === 'ADMIN'
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : 'bg-blue-100 text-blue-800'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-blue-100 text-blue-800'
                                                             }`}>
                                                             {user.role}
                                                         </div>
@@ -312,8 +350,8 @@ const Navbar = () => {
                                         key={item.name}
                                         to={item.path}
                                         className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${location.pathname === item.path
-                                                ? 'text-blue-600 bg-blue-50'
-                                                : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                                            ? 'text-blue-600 bg-blue-50'
+                                            : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                                             }`}
                                         onClick={() => setIsOpen(false)}
                                     >
@@ -330,8 +368,8 @@ const Navbar = () => {
                                             <p className="text-xs text-gray-500 truncate">{user.email}</p>
                                             <div className="flex items-center mt-1">
                                                 <div className={`text-xs px-2 py-1 rounded-full ${user.role === 'ADMIN'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-blue-100 text-blue-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-blue-100 text-blue-800'
                                                     }`}>
                                                     {user.role}
                                                 </div>

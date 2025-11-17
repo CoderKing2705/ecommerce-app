@@ -111,4 +111,10 @@ export const formatDate = (dateString) => {
     });
 };
 
+export const adminAPI = {
+    getStats: () => api.get('/admin/stats'),
+    getUsers: (params = {}) => api.get('/admin/users', { params }),
+    updateUserRole: (userId, data) => api.put(`/admin/users/${userId}/role`, data),
+    getUserActivities: () => api.get('/admin/user-activities'),
+};
 export default api;
