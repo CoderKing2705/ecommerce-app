@@ -45,7 +45,7 @@ const OAuthSuccess = () => {
                 </h2>
 
                 <p className="text-gray-600 mb-6">
-                    Welcome to FashionStore! You're being redirected to your dashboard.
+                    Welcome to GlowNest Decor! You're being redirected to your dashboard.
                 </p>
 
                 <motion.div

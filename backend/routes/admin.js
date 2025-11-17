@@ -10,67 +10,149 @@ router.use(auth);
 router.use(admin);
 
 // Get dashboard statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', adminAuth, async (req, res) => {
     try {
-        // Get total users count
-        const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+        console.log('Fetching admin stats...');
 
-        // Get total products count
-        const productsCount = await pool.query('SELECT COUNT(*) FROM products');
+        // Initialize all stats with default values
+        const stats = {
+            totalUsers: 0,
+            activeUsers: 0,
+            todayUsers: 0,
+            weekUsers: 0,
+            totalProducts: 0,
+            totalOrders: 0,
+            todayOrders: 0,
+            totalRevenue: 0,
+            productsByCategory: [],
+            ordersByStatus: [],
+            monthlyRevenue: [],
+            userSignups: [],
+            recentUsers: []
+        };
 
-        // Get total orders count (you can add orders table later)
-        // const ordersCount = await pool.query('SELECT COUNT(*) FROM orders');
+        try {
+            // Get user stats
+            const totalUsersResult = await pool.query('SELECT COUNT(*) FROM users');
+            stats.totalUsers = parseInt(totalUsersResult.rows[0].count) || 0;
 
-        // Get today's new users
-        const todayUsers = await pool.query(
-            `SELECT COUNT(*) FROM users 
-       WHERE DATE(created_at) = CURRENT_DATE`
-        );
+            const activeUsersResult = await pool.query(
+                'SELECT COUNT(*) FROM users WHERE last_activity > NOW() - INTERVAL \'15 minutes\''
+            );
+            stats.activeUsers = parseInt(activeUsersResult.rows[0].count) || 0;
 
-        // Get this week's new users
-        const weekUsers = await pool.query(
-            `SELECT COUNT(*) FROM users 
-       WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'`
-        );
+            const todayUsersResult = await pool.query(
+                'SELECT COUNT(*) FROM users WHERE created_at::date = CURRENT_DATE'
+            );
+            stats.todayUsers = parseInt(todayUsersResult.rows[0].count) || 0;
 
-        // Get user signups per day for the last 30 days
-        const userSignups = await pool.query(
-            `SELECT DATE(created_at) as date, COUNT(*) as count
-       FROM users 
-       WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
-       GROUP BY DATE(created_at) 
-       ORDER BY date`
-        );
+            const weekUsersResult = await pool.query(
+                'SELECT COUNT(*) FROM users WHERE created_at >= DATE_TRUNC(\'week\', CURRENT_DATE)'
+            );
+            stats.weekUsers = parseInt(weekUsersResult.rows[0].count) || 0;
 
-        // Get products by category
-        const productsByCategory = await pool.query(
-            `SELECT category, COUNT(*) as count 
-       FROM products 
-       GROUP BY category 
-       ORDER BY count DESC`
-        );
+            // Get product stats
+            const totalProductsResult = await pool.query('SELECT COUNT(*) FROM products');
+            stats.totalProducts = parseInt(totalProductsResult.rows[0].count) || 0;
 
-        // Get recent users (last 10)
-        const recentUsers = await pool.query(
-            `SELECT id, name, email, role, created_at, last_login 
-       FROM users 
-       ORDER BY created_at DESC 
-       LIMIT 10`
-        );
+            const productsByCategoryResult = await pool.query(`
+                SELECT category, COUNT(*) as count 
+                FROM products 
+                GROUP BY category 
+                ORDER BY count DESC
+            `);
+            stats.productsByCategory = productsByCategoryResult.rows || [];
 
-        res.json({
-            totalUsers: parseInt(usersCount.rows[0].count),
-            totalProducts: parseInt(productsCount.rows[0].count),
-            totalOrders: 0, // Placeholder for orders
-            todayUsers: parseInt(todayUsers.rows[0].count),
-            weekUsers: parseInt(weekUsers.rows[0].count),
-            userSignups: userSignups.rows,
-            productsByCategory: productsByCategory.rows,
-            recentUsers: recentUsers.rows
-        });
+            // Get order stats - wrapped in try-catch for table existence
+            try {
+                const totalOrdersResult = await pool.query('SELECT COUNT(*) FROM orders');
+                stats.totalOrders = parseInt(totalOrdersResult.rows[0].count) || 0;
+
+                const todayOrdersResult = await pool.query(
+                    'SELECT COUNT(*) FROM orders WHERE created_at::date = CURRENT_DATE'
+                );
+                stats.todayOrders = parseInt(todayOrdersResult.rows[0].count) || 0;
+
+                const totalRevenueResult = await pool.query(`
+                    SELECT COALESCE(SUM(total_amount), 0) as revenue 
+                    FROM orders 
+                    WHERE payment_status = 'paid'
+                `);
+                stats.totalRevenue = parseFloat(totalRevenueResult.rows[0].revenue) || 0;
+
+                const ordersByStatusResult = await pool.query(`
+                    SELECT status, COUNT(*) as count 
+                    FROM orders 
+                    GROUP BY status 
+                    ORDER BY count DESC
+                `);
+                stats.ordersByStatus = ordersByStatusResult.rows || [];
+
+                const monthlyRevenueResult = await pool.query(`
+                    SELECT 
+                        DATE_TRUNC('month', created_at) as month,
+                        SUM(total_amount) as revenue
+                    FROM orders 
+                    WHERE payment_status = 'paid'
+                    GROUP BY DATE_TRUNC('month', created_at)
+                    ORDER BY month DESC
+                    LIMIT 6
+                `);
+                stats.monthlyRevenue = monthlyRevenueResult.rows || [];
+
+            } catch (orderError) {
+                console.log('Orders table not available, using default order stats');
+                // Continue with default order values (0)
+            }
+
+            // Get user signups for last 30 days
+            const userSignupsResult = await pool.query(`
+                SELECT DATE(created_at) as date, COUNT(*) as count
+                FROM users 
+                WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+                GROUP BY DATE(created_at)
+                ORDER BY date
+            `);
+            stats.userSignups = userSignupsResult.rows || [];
+
+            // Get recent users with status
+            const recentUsersResult = await pool.query(`
+                SELECT id, name, email, role, created_at, last_activity, last_login
+                FROM users 
+                ORDER BY created_at DESC 
+                LIMIT 5
+            `);
+
+            stats.recentUsers = (recentUsersResult.rows || []).map(user => {
+                const lastActivity = user.last_activity || user.last_login || user.created_at;
+                const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                const isActive = lastActivity && new Date(lastActivity) > fifteenMinutesAgo;
+
+                return {
+                    ...user,
+                    status: isActive ? 'Active' : 'Inactive'
+                };
+            });
+
+        } catch (queryError) {
+            console.error('Error in individual queries:', queryError);
+            // Continue with default values
+        }
+
+        console.log('Sending stats response:', stats);
+        // Send single response
+        res.json(stats);
+
     } catch (error) {
-        console.error('Admin stats error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error in admin stats route:', error);
+
+        // Only send error response if headers haven't been sent
+        if (!res.headersSent) {
+            res.status(500).json({
+                error: 'Failed to fetch stats',
+                details: error.message
+            });
+        }
     }
 });
 

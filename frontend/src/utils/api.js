@@ -116,5 +116,9 @@ export const adminAPI = {
     getUsers: (params = {}) => api.get('/admin/users', { params }),
     updateUserRole: (userId, data) => api.put(`/admin/users/${userId}/role`, data),
     getUserActivities: () => api.get('/admin/user-activities'),
+    getOrders: (params) => api.get('/admin/orders', { params }),
+    updateOrderStatus: (id, data) => api.put(`/admin/orders/${id}/status`, data),
+    updateOrderPaymentStatus: (id, data) => api.put(`/admin/orders/${id}/payment-status`, data),
+    addShippingInfo: (id, data) => api.post(`/admin/orders/${id}/shipping`, data),
 };
 export default api;

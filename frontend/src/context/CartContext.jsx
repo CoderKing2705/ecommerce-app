@@ -176,8 +176,8 @@ export const CartProvider = ({ children }) => {
     };
 
     const value = {
-        cart,
-        wishlist,
+        cart: Array.isArray(cart) ? cart : [],
+        wishlist: Array.isArray(wishlist) ? wishlist : [],
         loading,
         addToCart,
         removeFromCart,

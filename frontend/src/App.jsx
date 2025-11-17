@@ -19,76 +19,82 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageProducts from './pages/admin/ManageProducts';
 import ManageUsers from './pages/admin/ManageUsers';
 
+function AppContent() {
+  return (
+    <Router>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <Navbar />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              borderRadius: '10px',
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/auth/success" element={<OAuthSuccess />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/products"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <ManageProducts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <ManageUsers />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Router>
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-            <Navbar />
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  borderRadius: '10px',
-                  background: '#363636',
-                  color: '#fff',
-                },
-              }}
-            />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/auth/success" element={<OAuthSuccess />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/analytics"
-                element={
-                  <ProtectedRoute adminOnly={true}>
-                    <Analytics />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/wishlist" element={<Wishlist />} />
-              <Route path="/product/:id" element={<ProductDetails />} />
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <ProtectedRoute adminOnly={true}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/products"
-                element={
-                  <ProtectedRoute adminOnly={true}>
-                    <ManageProducts />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <ProtectedRoute adminOnly={true}>
-                    <ManageUsers />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </div>
-        </Router>
+        <AppContent />
       </CartProvider>
     </AuthProvider>
   );
