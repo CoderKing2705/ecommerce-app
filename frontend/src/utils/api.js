@@ -120,5 +120,8 @@ export const adminAPI = {
     updateOrderStatus: (id, data) => api.put(`/admin/orders/${id}/status`, data),
     updateOrderPaymentStatus: (id, data) => api.put(`/admin/orders/${id}/payment-status`, data),
     addShippingInfo: (id, data) => api.post(`/admin/orders/${id}/shipping`, data),
+    getOrderDetails: (id) => api.get(`/admin/orders/${id}/details`),
+    addStatusHistory: (id, data) => api.post(`/admin/orders/${id}/status-history`, data),
+    addOrderNote: (id, data) => api.post(`/admin/orders/${id}/notes`, data),
 };
 export default api;

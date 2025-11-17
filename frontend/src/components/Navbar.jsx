@@ -38,6 +38,7 @@ const Navbar = () => {
                     { name: 'Dashboard', path: '/admin/dashboard' },
                     { name: 'Manage Products', path: '/admin/products' },
                     { name: 'Manage Users', path: '/admin/users' },
+                    { name: 'Manage Orders', path: '/admin/orders' },
                 ]
             }
         ] : []),

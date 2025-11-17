@@ -18,6 +18,8 @@ import ProductDetails from './pages/ProductDetails';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageProducts from './pages/admin/ManageProducts';
 import ManageUsers from './pages/admin/ManageUsers';
+import OrderDetails from './pages/admin/OrderDetails';
+import ManageOrders from './pages/admin/ManageOrders';
 
 function AppContent() {
   return (
@@ -81,6 +83,22 @@ function AppContent() {
             element={
               <ProtectedRoute adminOnly={true}>
                 <ManageUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <ManageOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/orders/:id"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <OrderDetails />
               </ProtectedRoute>
             }
           />

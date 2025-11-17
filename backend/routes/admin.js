@@ -268,4 +268,254 @@ router.get('/user-activities', async (req, res) => {
     }
 });
 
+// Get all orders with pagination and filtering
+// Get all orders with pagination and filtering - FIXED VERSION
+router.get('/orders', adminAuth, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const status = req.query.status || '';
+        const search = req.query.search || '';
+        const offset = (page - 1) * limit;
+
+        let query = `
+            SELECT 
+                o.*,
+                u.name as customer_name,
+                u.email as customer_email,
+                COUNT(oi.id) as items_count
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+        `;
+
+        let countQuery = 'SELECT COUNT(DISTINCT o.id) FROM orders o';
+        let queryParams = [];
+        let countParams = [];
+        let conditions = [];
+
+        // Build conditions for main query and count query
+        if (status) {
+            conditions.push('o.status = $' + (conditions.length + 1));
+            queryParams.push(status);
+            countParams.push(status);
+        }
+
+        if (search) {
+            conditions.push('(o.order_number ILIKE $' + (conditions.length + 1) +
+                ' OR u.name ILIKE $' + (conditions.length + 1) +
+                ' OR u.email ILIKE $' + (conditions.length + 1) + ')');
+            queryParams.push(`%${search}%`);
+            countParams.push(`%${search}%`);
+        }
+
+        // Add WHERE clause if there are conditions
+        if (conditions.length > 0) {
+            const whereClause = ' WHERE ' + conditions.join(' AND ');
+            query += whereClause;
+            countQuery += whereClause;
+        }
+
+        // Add GROUP BY, ORDER BY, LIMIT, OFFSET to main query
+        query += ' GROUP BY o.id, u.name, u.email ORDER BY o.created_at DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
+        queryParams.push(limit, offset);
+
+        console.log('Query:', query);
+        console.log('Query Params:', queryParams);
+        console.log('Count Query:', countQuery);
+        console.log('Count Params:', countParams);
+
+        const ordersResult = await pool.query(query, queryParams);
+        const countResult = await pool.query(countQuery, countParams);
+
+        const totalOrders = parseInt(countResult.rows[0].count);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        res.json({
+            orders: ordersResult.rows,
+            currentPage: page,
+            totalPages,
+            totalOrders
+        });
+
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).json({
+            error: 'Failed to fetch orders',
+            details: error.message
+        });
+    }
+});
+
+// Update order status
+router.put('/orders/:id/status', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+
+        const result = await pool.query(
+            'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+            [status, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        res.json({
+            message: 'Order status updated successfully',
+            order: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        res.status(500).json({ error: 'Failed to update order status' });
+    }
+});
+
+// Get complete order details
+// Get complete order details - FIXED VERSION
+router.get('/orders/:id/details', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Get order with customer info
+        const orderResult = await pool.query(`
+            SELECT 
+                o.*,
+                u.name as customer_name,
+                u.email as customer_email
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            WHERE o.id = $1
+        `, [id]);
+
+        if (orderResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const order = orderResult.rows[0];
+
+        // Get order items
+        const itemsResult = await pool.query(`
+            SELECT 
+                oi.*,
+                p.image_url,
+                p.stock_quantity
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $1
+        `, [id]);
+
+        // Get status history
+        const statusHistoryResult = await pool.query(`
+            SELECT 
+                osh.*,
+                u.name as updated_by_name
+            FROM order_status_history osh
+            LEFT JOIN users u ON osh.created_by = u.id
+            WHERE osh.order_id = $1
+            ORDER BY osh.created_at DESC
+        `, [id]);
+
+        // Get order notes - FIXED: changed alias from 'on' to 'ord_notes'
+        const notesResult = await pool.query(`
+            SELECT 
+                ord_notes.*,
+                u.name as created_by_name
+            FROM order_notes ord_notes
+            LEFT JOIN users u ON ord_notes.created_by = u.id
+            WHERE ord_notes.order_id = $1
+            ORDER BY ord_notes.created_at DESC
+        `, [id]);
+
+        // Get shipping info
+        const shippingResult = await pool.query(`
+            SELECT * FROM order_shipping 
+            WHERE order_id = $1
+        `, [id]);
+
+        res.json({
+            order: {
+                ...order,
+                items: itemsResult.rows,
+                status_history: statusHistoryResult.rows,
+                notes: notesResult.rows,
+                shipping: shippingResult.rows[0] || null
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching order details:', error);
+        res.status(500).json({
+            error: 'Failed to fetch order details',
+            details: error.message
+        });
+    }
+});
+
+// Add status history entry
+router.post('/orders/:id/status-history', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, note } = req.body;
+
+        // Verify order exists
+        const orderCheck = await pool.query('SELECT id FROM orders WHERE id = $1', [id]);
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Add status history
+        const result = await pool.query(`
+            INSERT INTO order_status_history (order_id, status, note, created_by)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        `, [id, status, note, req.user.id]);
+
+        // Update main order status
+        await pool.query(
+            'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2',
+            [status, id]
+        );
+
+        res.status(201).json({
+            message: 'Status updated successfully',
+            status_history: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Error adding status history:', error);
+        res.status(500).json({ error: 'Failed to update order status' });
+    }
+});
+
+// Add order note
+router.post('/orders/:id/notes', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { note, is_internal = true } = req.body;
+
+        const result = await pool.query(`
+            INSERT INTO order_notes (order_id, note, is_internal, created_by)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        `, [id, note, is_internal, req.user.id]);
+
+        res.status(201).json({
+            message: 'Note added successfully',
+            note: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Error adding order note:', error);
+        res.status(500).json({ error: 'Failed to add note' });
+    }
+});
+
 export default router;
