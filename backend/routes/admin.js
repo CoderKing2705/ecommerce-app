@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool } from '../config/database.js';
-import { auth } from '../middleware/auth.js';
+import { adminAuth, auth } from '../middleware/auth.js';
 import { admin } from '../middleware/admin.js';
 
 const router = express.Router();
@@ -75,14 +75,14 @@ router.get('/stats', async (req, res) => {
 });
 
 // Get all users with pagination
-router.get('/users', auth, async (req, res) => {
+router.get('/users', adminAuth, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search || '';
         const offset = (page - 1) * limit;
 
-        let query = 'SELECT id, name, email, role, created_at, updated_at FROM users';
+        let query = 'SELECT id, name, email, role, created_at, updated_at, last_activity, last_login FROM users';
         let countQuery = 'SELECT COUNT(*) FROM users';
         let queryParams = [];
 
@@ -102,14 +102,22 @@ router.get('/users', auth, async (req, res) => {
         const totalUsers = parseInt(countResult.rows[0].count);
         const totalPages = Math.ceil(totalUsers / limit);
 
-        // Map users to include last_activity (use updated_at as fallback)
-        const usersWithActivity = users.map(user => ({
-            ...user,
-            last_activity: user.last_login || user.updated_at || user.created_at
-        }));
+        // Map users to include status based on activity
+        const usersWithStatus = users.map(user => {
+            // Consider user active if they had activity in the last 15 minutes
+            const lastActivity = user.last_activity || user.last_login || user.updated_at;
+            const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+            const isActive = lastActivity && new Date(lastActivity) > fifteenMinutesAgo;
+
+            return {
+                ...user,
+                last_activity: lastActivity,
+                status: isActive ? 'Active' : 'Inactive'
+            };
+        });
 
         res.json({
-            users: usersWithActivity,
+            users: usersWithStatus,
             currentPage: page,
             totalPages,
             totalUsers
