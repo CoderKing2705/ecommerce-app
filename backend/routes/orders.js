@@ -195,6 +195,130 @@ router.post('/:id/notes', adminAuth, async (req, res) => {
     }
 });
 
+// Get user's orders
+router.get('/my-orders', auth, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Get orders with basic info
+        const ordersResult = await pool.query(`
+            SELECT 
+                o.id,
+                o.order_number,
+                o.total_amount,
+                o.status,
+                o.payment_status,
+                o.payment_method,
+                o.created_at,
+                COUNT(oi.id) as items_count,
+                JSON_AGG(
+                    DISTINCT JSONB_BUILD_OBJECT(
+                        'id', oi.id,
+                        'product_name', oi.product_name,
+                        'product_price', oi.product_price,
+                        'quantity', oi.quantity,
+                        'total_price', oi.total_price,
+                        'image_url', p.image_url
+                    )
+                ) as items
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE o.user_id = $1
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+            LIMIT $2 OFFSET $3
+        `, [req.user.id, limit, offset]);
+
+        // Get total count for pagination
+        const countResult = await pool.query(
+            'SELECT COUNT(*) FROM orders WHERE user_id = $1',
+            [req.user.id]
+        );
+
+        const totalOrders = parseInt(countResult.rows[0].count);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        res.json({
+            orders: ordersResult.rows,
+            currentPage: page,
+            totalPages,
+            totalOrders
+        });
+
+    } catch (error) {
+        console.error('Error fetching user orders:', error);
+        res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+});
+
+// Get single order for user (with full details)
+router.get('/my-orders/:id', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Verify the order belongs to the user
+        const orderCheck = await pool.query(
+            'SELECT id FROM orders WHERE id = $1 AND user_id = $2',
+            [id, req.user.id]
+        );
+
+        if (orderCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Get order details
+        const orderResult = await pool.query(`
+            SELECT 
+                o.*,
+                os.tracking_number,
+                os.carrier,
+                os.shipping_date,
+                os.estimated_delivery
+            FROM orders o
+            LEFT JOIN order_shipping os ON o.id = os.order_id
+            WHERE o.id = $1
+        `, [id]);
+
+        const order = orderResult.rows[0];
+
+        // Get order items
+        const itemsResult = await pool.query(`
+            SELECT 
+                oi.*,
+                p.image_url,
+                p.description
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = $1
+        `, [id]);
+
+        // Get status history
+        const statusHistoryResult = await pool.query(`
+            SELECT 
+                status,
+                note,
+                created_at
+            FROM order_status_history 
+            WHERE order_id = $1 
+            ORDER BY created_at DESC
+        `, [id]);
+
+        res.json({
+            order: {
+                ...order,
+                items: itemsResult.rows,
+                status_history: statusHistoryResult.rows
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching user order details:', error);
+        res.status(500).json({ error: 'Failed to fetch order details' });
+    }
+});
 // Add other order routes as needed...
 
 export default router;

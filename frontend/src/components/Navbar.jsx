@@ -43,6 +43,7 @@ const Navbar = () => {
             }
         ] : []),
         { name: 'Contact', path: '/contact' },
+        { name: 'My Orders', path: '/orders' }
     ];
 
     const handleLogout = () => {
@@ -92,8 +93,8 @@ const Navbar = () => {
                 key={item.name}
                 to={item.path}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors relative ${location.pathname === item.path
-                        ? 'text-blue-600 bg-blue-50'
-                        : 'text-gray-700 hover:text-blue-600'
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-700 hover:text-blue-600'
                     }`}
             >
                 {item.name}

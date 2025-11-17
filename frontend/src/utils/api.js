@@ -111,6 +111,11 @@ export const formatDate = (dateString) => {
     });
 };
 
+export const orderAPI = {
+    getMyOrders: (params) => api.get('/orders/my-orders', { params }),
+    getMyOrderDetails: (id) => api.get(`/orders/my-orders/${id}`),
+};
+
 export const adminAPI = {
     getStats: () => api.get('/admin/stats'),
     getUsers: (params = {}) => api.get('/admin/users', { params }),

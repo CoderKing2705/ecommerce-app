@@ -20,6 +20,8 @@ import ManageProducts from './pages/admin/ManageProducts';
 import ManageUsers from './pages/admin/ManageUsers';
 import OrderDetails from './pages/admin/OrderDetails';
 import ManageOrders from './pages/admin/ManageOrders';
+import MyOrders from './pages/MyOrders';
+import OrderDetailsUser from './pages/OrderDetailsUser';
 
 function AppContent() {
   return (
@@ -99,6 +101,22 @@ function AppContent() {
             element={
               <ProtectedRoute adminOnly={true}>
                 <OrderDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <MyOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:id"
+            element={
+              <ProtectedRoute>
+                <OrderDetailsUser />
               </ProtectedRoute>
             }
           />
