@@ -22,6 +22,7 @@ import OrderDetails from './pages/admin/OrderDetails';
 import ManageOrders from './pages/admin/ManageOrders';
 import MyOrders from './pages/MyOrders';
 import OrderDetailsUser from './pages/OrderDetailsUser';
+import OrderManagement from './components/admin/OrderManagement';
 
 function AppContent() {
   return (
@@ -120,6 +121,11 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          {/* <Route path="/admin/orders" element={
+            <ProtectedRoute adminOnly={true}>
+              <OrderManagement />
+            </ProtectedRoute>
+          } /> */}
         </Routes>
       </div>
     </Router>

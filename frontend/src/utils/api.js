@@ -114,6 +114,10 @@ export const formatDate = (dateString) => {
 export const orderAPI = {
     getMyOrders: (params) => api.get('/orders/my-orders', { params }),
     getMyOrderDetails: (id) => api.get(`/orders/my-orders/${id}`),
+    getOrders: (params = {}) => api.get('/orders', { params }),
+    getUserOrders: () => api.get('/orders/user'),
+    getOrderById: (id) => api.get(`/orders/${id}`),
+    updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
 };
 
 export const adminAPI = {
@@ -128,5 +132,8 @@ export const adminAPI = {
     getOrderDetails: (id) => api.get(`/admin/orders/${id}/details`),
     addStatusHistory: (id, data) => api.post(`/admin/orders/${id}/status-history`, data),
     addOrderNote: (id, data) => api.post(`/admin/orders/${id}/notes`, data),
+    cancelOrder: (id, reason) => api.put(`/order-ops/${id}/cancel`, { reason }),
+    processRefund: (orderId, data) => api.put(`/order-ops/${orderId}/refund`, data),
+    bulkUpdateOrders: (data) => api.post('/order-ops/bulk', data)
 };
 export default api;
