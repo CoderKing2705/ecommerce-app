@@ -134,6 +134,9 @@ export const adminAPI = {
     addOrderNote: (id, data) => api.post(`/admin/orders/${id}/notes`, data),
     cancelOrder: (id, reason) => api.put(`/order-ops/${id}/cancel`, { reason }),
     processRefund: (orderId, data) => api.put(`/order-ops/${orderId}/refund`, data),
-    bulkUpdateOrders: (data) => api.post('/order-ops/bulk', data)
+    bulkUpdateOrders: (data) => api.post('/order-ops/bulk', data),
+    getDailyOrders: (params) => api.get('/analytics/orders/daily', { params }),
+    getStatusDistribution: () => api.get('/analytics/orders/status-distribution'),
+    getRevenueStats: (params) => api.get('/analytics/orders/revenue', { params })
 };
 export default api;
