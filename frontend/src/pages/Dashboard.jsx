@@ -121,8 +121,8 @@ const Dashboard = () => {
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`flex items-center py-4 px-6 border-b-2 font-medium text-sm capitalize ${activeTab === tab
-                                            ? 'border-blue-500 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     {tab === 'overview' && <TrendingUp className="h-5 w-5 mr-2" />}
@@ -225,7 +225,8 @@ const Dashboard = () => {
                                                         <div className="flex items-center space-x-2 mt-2">
                                                             <button
                                                                 onClick={() => handleDecreaseQuantity(item)}
-                                                                className="p-1 rounded-md border border-gray-300 hover:bg-gray-100"
+                                                                className={`p-1 rounded-md border border-gray-300 hover:bg-gray-100 ${item.quantity <= 1 ? 'opacity-50 cursor-not-allowed' : ''
+                                                                    }`}
                                                                 disabled={item.quantity <= 1}
                                                             >
                                                                 <Minus className="h-3 w-3" />
@@ -233,10 +234,15 @@ const Dashboard = () => {
                                                             <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                                                             <button
                                                                 onClick={() => handleIncreaseQuantity(item)}
-                                                                className="p-1 rounded-md border border-gray-300 hover:bg-gray-100"
+                                                                className={`p-1 rounded-md border border-gray-300 hover:bg-gray-100 ${item.quantity >= 5 ? 'opacity-50 cursor-not-allowed' : ''
+                                                                    }`}
+                                                                disabled={item.quantity >= 5}
                                                             >
                                                                 <Plus className="h-3 w-3" />
                                                             </button>
+                                                            {item.quantity >= 5 && (
+                                                                <span className="text-xs text-red-600 ml-2">Max 5</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

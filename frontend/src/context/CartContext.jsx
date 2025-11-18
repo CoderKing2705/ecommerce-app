@@ -68,6 +68,12 @@ export const CartProvider = ({ children }) => {
             return;
         }
 
+        // Frontend validation
+        if (quantity > 5) {
+            toast.error('Maximum quantity limit is 5 items per product');
+            return;
+        }
+
         try {
             setLoading(true);
             await cartAPI.add(product.id, quantity);
@@ -77,7 +83,9 @@ export const CartProvider = ({ children }) => {
             });
         } catch (error) {
             console.error('Error adding to cart:', error);
-            if (error.response?.status === 401) {
+            if (error.response?.status === 400) {
+                toast.error(error.response.data.message);
+            } else if (error.response?.status === 401) {
                 toast.error('Please login again');
             } else {
                 toast.error('Failed to add item to cart');
@@ -108,13 +116,23 @@ export const CartProvider = ({ children }) => {
                 return;
             }
 
+            // Frontend validation (optional, but good for UX)
+            if (quantity > 5) {
+                toast.error('Maximum quantity limit is 5 items per product');
+                return;
+            }
+
             await cartAPI.update(cartItemId, quantity);
             setCart(prev => prev.map(item =>
                 item.id === cartItemId ? { ...item, quantity } : item
             ));
         } catch (error) {
             console.error('Error updating cart quantity:', error);
-            toast.error('Failed to update quantity');
+            if (error.response?.status === 400) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error('Failed to update quantity');
+            }
         }
     };
 

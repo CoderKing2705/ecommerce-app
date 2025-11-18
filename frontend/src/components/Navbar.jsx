@@ -43,7 +43,7 @@ const Navbar = () => {
             }
         ] : []),
         { name: 'Contact', path: '/contact' },
-        { name: 'My Orders', path: '/orders' }
+        ...(user?.role !== 'ADMIN' ? [{ name: 'My Orders', path: '/orders' }] : [])
     ];
 
     const handleLogout = () => {
