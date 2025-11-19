@@ -8,6 +8,11 @@ import {
 import { inventoryAPI } from '../../utils/api';
 import LoadingSpinner from '../LoadingSpinner';
 import toast from 'react-hot-toast';
+import {
+    BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+
 
 const InventoryManagement = () => {
     const [inventory, setInventory] = useState([]);
@@ -29,6 +34,8 @@ const InventoryManagement = () => {
         reason: '',
         movement_type: 'adjustment'
     });
+
+    const [activeChart, setActiveChart] = useState('status');
 
     useEffect(() => {
         fetchInventory();
@@ -57,6 +64,75 @@ const InventoryManagement = () => {
             console.error('Error fetching stats:', error);
         }
     };
+
+    const getChartData = () => {
+        switch (activeChart) {
+            case 'status':
+                return getStatusChartData();
+            case 'stock':
+                return getStockLevelChartData();
+            case 'movements':
+                return getMovementChartData();
+            default:
+                return getStatusChartData();
+        }
+    };
+
+
+    const getStatusChartData = () => {
+        const statusCounts = {
+            'In Stock': 0,
+            'Low Stock': 0,
+            'Out of Stock': 0
+        };
+
+        inventory.forEach(item => {
+            if (item.current_stock === 0) {
+                statusCounts['Out of Stock']++;
+            } else if (item.current_stock <= item.minimum_stock_level) {
+                statusCounts['Low Stock']++;
+            } else {
+                statusCounts['In Stock']++;
+            }
+        });
+
+        return Object.entries(statusCounts).map(([name, value]) => ({
+            name,
+            value,
+            color: name === 'In Stock' ? '#10B981' : name === 'Low Stock' ? '#F59E0B' : '#EF4444'
+        }));
+    };
+
+    // Chart 2: Stock Levels by Product (Top 10)
+    const getStockLevelChartData = () => {
+        return inventory
+            .slice(0, 10) // Top 10 products
+            .map(item => ({
+                name: item.product_name.length > 15
+                    ? item.product_name.substring(0, 15) + '...'
+                    : item.product_name,
+                stock: item.current_stock,
+                minLevel: item.minimum_stock_level,
+                status: item.current_stock === 0 ? 'Out of Stock' :
+                    item.current_stock <= item.minimum_stock_level ? 'Low Stock' : 'In Stock'
+            }));
+    };
+
+    // Chart 3: Recent Stock Movements (Mock data - you'd integrate with your API)
+    const getMovementChartData = () => {
+        // This would come from your stock movements API
+        return [
+            { date: 'Jan 1', incoming: 45, outgoing: 32, adjustments: 5 },
+            { date: 'Jan 2', incoming: 52, outgoing: 38, adjustments: 2 },
+            { date: 'Jan 3', incoming: 38, outgoing: 45, adjustments: 8 },
+            { date: 'Jan 4', incoming: 61, outgoing: 29, adjustments: 3 },
+            { date: 'Jan 5', incoming: 47, outgoing: 42, adjustments: 6 },
+            { date: 'Jan 6', incoming: 55, outgoing: 38, adjustments: 4 },
+            { date: 'Jan 7', incoming: 42, outgoing: 51, adjustments: 7 },
+        ];
+    };
+
+    const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
 
     const handleStockUpdate = async (e) => {
         e.preventDefault();
@@ -204,6 +280,145 @@ const InventoryManagement = () => {
                         </motion.div>
                     ))}
                 </div>
+
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8"
+                >
+                    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-semibold text-gray-900">Inventory Analytics</h2>
+                            <div className="flex space-x-2">
+                                {[
+                                    { key: 'status', label: 'Status Distribution' },
+                                    { key: 'stock', label: 'Stock Levels' },
+                                    { key: 'movements', label: 'Movements' }
+                                ].map((chart) => (
+                                    <button
+                                        key={chart.key}
+                                        onClick={() => setActiveChart(chart.key)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeChart === chart.key
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        {chart.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                                {activeChart === 'status' && (
+                                    <PieChart>
+                                        <Pie
+                                            data={getStatusChartData()}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                        >
+                                            {getStatusChartData().map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend />
+                                    </PieChart>
+                                )}
+
+                                {activeChart === 'stock' && (
+                                    <BarChart data={getStockLevelChartData()}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Bar
+                                            dataKey="stock"
+                                            name="Current Stock"
+                                            fill="#3B82F6"
+                                        />
+                                        <Bar
+                                            dataKey="minLevel"
+                                            name="Minimum Level"
+                                            fill="#F59E0B"
+                                        />
+                                    </BarChart>
+                                )}
+
+                                {activeChart === 'movements' && (
+                                    <LineChart data={getMovementChartData()}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="date" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Legend />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="incoming"
+                                            name="Incoming Stock"
+                                            stroke="#10B981"
+                                            strokeWidth={2}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="outgoing"
+                                            name="Outgoing Stock"
+                                            stroke="#EF4444"
+                                            strokeWidth={2}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="adjustments"
+                                            name="Adjustments"
+                                            stroke="#F59E0B"
+                                            strokeWidth={2}
+                                        />
+                                    </LineChart>
+                                )}
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* Chart Insights */}
+                        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                            <h3 className="font-semibold text-gray-900 mb-2">Insights</h3>
+                            {activeChart === 'status' && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                    <div className="flex items-center">
+                                        <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                        <span>{getStatusChartData().find(d => d.name === 'In Stock')?.value || 0} products in stock</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                                        <span>{getStatusChartData().find(d => d.name === 'Low Stock')?.value || 0} products need reordering</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                                        <span>{getStatusChartData().find(d => d.name === 'Out of Stock')?.value || 0} products out of stock</span>
+                                    </div>
+                                </div>
+                            )}
+                            {activeChart === 'stock' && (
+                                <p className="text-sm text-gray-600">
+                                    Showing top 10 products by stock level. Monitor products approaching their minimum levels.
+                                </p>
+                            )}
+                            {activeChart === 'movements' && (
+                                <p className="text-sm text-gray-600">
+                                    Track incoming, outgoing, and adjustment movements to identify inventory patterns.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+
 
                 {/* Filters */}
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">

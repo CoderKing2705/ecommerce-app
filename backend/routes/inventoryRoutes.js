@@ -425,4 +425,59 @@ router.get('/dashboard-metrics', adminAuth, async (req, res) => {
     }
 });
 
+router.get('/analytics/chart-data', adminAuth, async (req, res) => {
+    try {
+        // Status distribution
+        const statusDistribution = await pool.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN current_stock = 0 THEN 1 END) as out_of_stock,
+                COUNT(CASE WHEN current_stock <= minimum_stock_level AND current_stock > 0 THEN 1 END) as low_stock,
+                COUNT(CASE WHEN current_stock > minimum_stock_level THEN 1 END) as in_stock
+            FROM inventory
+        `);
+
+        // Top products by stock
+        const topProducts = await pool.query(`
+            SELECT 
+                p.name as product_name,
+                i.current_stock,
+                i.minimum_stock_level
+            FROM inventory i
+            JOIN products p ON i.product_id = p.id
+            ORDER BY i.current_stock DESC
+            LIMIT 10
+        `);
+
+        // Recent stock movements
+        const recentMovements = await pool.query(`
+            SELECT 
+                DATE(created_at) as date,
+                COUNT(*) as total_movements,
+                COUNT(CASE WHEN movement_type IN ('purchase', 'return') THEN 1 END) as incoming,
+                COUNT(CASE WHEN movement_type IN ('sale', 'damage') THEN 1 END) as outgoing,
+                COUNT(CASE WHEN movement_type = 'adjustment' THEN 1 END) as adjustments
+            FROM stock_movements 
+            WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `);
+
+        res.json({
+            success: true,
+            data: {
+                statusDistribution: statusDistribution.rows[0],
+                topProducts: topProducts.rows,
+                recentMovements: recentMovements.rows
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching chart data:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch chart data'
+        });
+    }
+});
+
 export default router;

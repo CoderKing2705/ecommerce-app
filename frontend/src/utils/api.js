@@ -142,7 +142,6 @@ export const adminAPI = {
 
 
 export const inventoryAPI = {
-    // Inventory management
     getInventory: (params) => api.get('/inventory', { params }),
     getInventoryItem: (id) => api.get(`/inventory/${id}`),
     updateStock: (id, data) => api.put(`/inventory/${id}/stock`, data),
@@ -150,13 +149,9 @@ export const inventoryAPI = {
     getStockMovements: (id, params) => api.get(`/inventory/${id}/movements`, { params }),
     getLowStockAlerts: () => api.get('/inventory/alerts/low-stock'),
     getInventoryStats: () => api.get('/inventory/stats/overview'),
-
-    // Purchase orders (you can add these later)
     getPurchaseOrders: (params) => api.get('/purchase-orders', { params }),
     createPurchaseOrder: (data) => api.post('/purchase-orders', data),
     updatePurchaseOrder: (id, data) => api.put(`/purchase-orders/${id}`, data),
-
-    // Suppliers (you can add these later)
     getSuppliers: () => api.get('/suppliers'),
     createSupplier: (data) => api.post('/suppliers', data),
 };
