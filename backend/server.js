@@ -45,6 +45,7 @@ import adminRoutes from './routes/admin.js';
 import orderRoutes from './routes/orders.js';
 import orderOperations from './routes/orderOperations.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import inventoryRoutes from './routes/inventoryRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -75,6 +76,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/order-ops', orderOperations);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

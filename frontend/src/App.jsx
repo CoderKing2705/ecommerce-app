@@ -24,6 +24,7 @@ import MyOrders from './pages/MyOrders';
 import OrderDetailsUser from './pages/OrderDetailsUser';
 import OrderManagement from './components/admin/OrderManagement';
 import OrderAnalytics from './components/admin/OrderAnalytics';
+import InventoryManagement from './components/admin/InventoryManagement';
 
 function AppContent() {
   return (
@@ -127,6 +128,14 @@ function AppContent() {
             element={
               <ProtectedRoute adminOnly={true}>
                 <OrderAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/inventory"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <InventoryManagement />
               </ProtectedRoute>
             }
           />

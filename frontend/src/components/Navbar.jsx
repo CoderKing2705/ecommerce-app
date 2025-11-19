@@ -30,7 +30,6 @@ const Navbar = () => {
         { name: 'Products', path: '/products' },
         { name: 'Wishlist', path: '/wishlist' },
         { name: 'Dashboard', path: '/dashboard' },
-        { name: 'Analytics', path: '/admin/analytics' },
         ...(user?.role === 'ADMIN' ? [
             {
                 name: 'Admin',
@@ -38,7 +37,9 @@ const Navbar = () => {
                 children: [
                     { name: 'Dashboard', path: '/admin/dashboard' },
                     { name: 'Manage Products', path: '/admin/products' },
+                    ...(user?.role !== 'USER' ? [{ name: 'Analytics', path: '/admin/analytics' }] : []),
                     { name: 'Manage Users', path: '/admin/users' },
+                    { name: 'Inventory', path: '/admin/inventory' },
                     { name: 'Manage Orders', path: '/admin/orders' },
                 ]
             }
