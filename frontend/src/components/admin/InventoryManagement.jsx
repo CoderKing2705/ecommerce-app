@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-    Package, Search, Filter, Plus, Edit, TrendingUp,
+    Package, Search, TrendingUp,
     AlertTriangle, CheckCircle, XCircle, RefreshCw,
-    BarChart3, Download, MoreVertical, ArrowUpDown
-} from 'lucide-react';
+    Download} from 'lucide-react';
 import { inventoryAPI } from '../../utils/api';
 import LoadingSpinner from '../LoadingSpinner';
 import toast from 'react-hot-toast';
