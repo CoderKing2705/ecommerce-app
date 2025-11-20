@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload } from 'lucide-react';
-import { productsAPI, handleAPIError } from '../../utils/api';
+import { productsAPI, handleAPIError, categoriesAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const ProductForm = ({ product, onClose, onSuccess }) => {
@@ -18,8 +18,9 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
-
-    const categories = ['T-Shirts', 'Jeans', 'Dresses', 'Jackets', 'Shoes', 'Accessories', 'Hoodies', 'Shirts', 'Shorts'];
+    const [categories, setCategories] = useState([]);
+    const [showNewCategory, setShowNewCategory] = useState(false);
+    const [newCategory, setNewCategory] = useState('');
     const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 
     useEffect(() => {
@@ -38,6 +39,16 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
         }
     }, [product]);
 
+    const fetchCategories = async () => {
+        try {
+            const response = await categoriesAPI.getAll(); // Use categoriesAPI
+            setCategories(response.data.data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            toast.error('Failed to load categories');
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -53,6 +64,37 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
         }
     };
 
+    const handleCategoryChange = (e) => {
+        const value = e.target.value;
+        if (value === '_new') {
+            setShowNewCategory(true);
+            setFormData(prev => ({ ...prev, category: '' }));
+        } else {
+            setFormData(prev => ({ ...prev, category: value }));
+            setShowNewCategory(false);
+        }
+    };
+
+    const handleAddNewCategory = async () => {
+        if (!newCategory.trim()) {
+            toast.error('Please enter a category name');
+            return;
+        }
+
+        try {
+            await categoriesAPI.create({ name: newCategory }); // Use categoriesAPI
+            toast.success('Category created successfully');
+            setFormData(prev => ({ ...prev, category: newCategory }));
+            setNewCategory('');
+            setShowNewCategory(false);
+            fetchCategories(); // Refresh categories list
+        } catch (error) {
+            console.error('Error creating category:', error);
+            toast.error(handleAPIError(error));
+        }
+    };
+
+
     const validateForm = () => {
         const newErrors = {};
 
@@ -60,7 +102,7 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
         if (!formData.description.trim()) newErrors.description = 'Description is required';
         if (!formData.price || parseFloat(formData.price) <= 0) newErrors.price = 'Valid price is required';
         if (!formData.image_url.trim()) newErrors.image_url = 'Image URL is required';
-        if (!formData.category) newErrors.category = 'Category is required';
+        if (!formData.category.trim()) newErrors.category = 'Category is required';
         if (!formData.brand.trim()) newErrors.brand = 'Brand is required';
         if (!formData.size) newErrors.size = 'Size is required';
         if (!formData.color.trim()) newErrors.color = 'Color is required';
@@ -88,11 +130,9 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
             };
 
             if (product) {
-                // Update existing product
                 await productsAPI.update(product.id, submitData);
                 toast.success('Product updated successfully');
             } else {
-                // Create new product
                 await productsAPI.create(submitData);
                 toast.success('Product created successfully');
             }
@@ -205,18 +245,47 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Category *
                                     </label>
-                                    <select
-                                        name="category"
-                                        value={formData.category}
-                                        onChange={handleChange}
-                                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? 'border-red-500' : 'border-gray-300'
-                                            }`}
-                                    >
-                                        <option value="">Select Category</option>
-                                        {categories.map(category => (
-                                            <option key={category} value={category}>{category}</option>
-                                        ))}
-                                    </select>
+                                    {!showNewCategory ? (
+                                        <select
+                                            name="category"
+                                            value={formData.category}
+                                            onChange={handleCategoryChange}
+                                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? 'border-red-500' : 'border-gray-300'
+                                                }`}
+                                        >
+                                            <option value="">Select Category</option>
+                                            {categories.map(category => (
+                                                <option key={category.name} value={category.name}>
+                                                    {category.name} ({category.product_count})
+                                                </option>
+                                            ))}
+                                            <option value="_new">+ Add New Category</option>
+                                        </select>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={newCategory}
+                                                onChange={(e) => setNewCategory(e.target.value)}
+                                                placeholder="Enter new category name"
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleAddNewCategory}
+                                                className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNewCategory(false)}
+                                                className="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    )}
                                     {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                                 </div>
 

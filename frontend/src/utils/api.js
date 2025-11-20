@@ -191,5 +191,12 @@ export const reviewsAPI = {
         api.get(`/reviews/${reviewId}/images`)
 };
 
+export const categoriesAPI = {
+    getAll: () => api.get('/categories'),
+    getStats: () => api.get('/categories/stats'),
+    create: (data) => api.post('/categories', data),
+    update: (oldName, newName) => api.put(`/categories/${oldName}`, { newName }),
+    delete: (name) => api.delete(`/categories/${name}`),
+};
 
 export default api;

@@ -184,8 +184,8 @@ const AdvancedFilters = ({
                                                     <Star
                                                         key={star}
                                                         className={`h-4 w-4 transition-colors ${star <= rating
-                                                                ? 'text-yellow-400 fill-current'
-                                                                : 'text-gray-300'
+                                                            ? 'text-yellow-400 fill-current'
+                                                            : 'text-gray-300'
                                                             }`}
                                                     />
                                                 ))}

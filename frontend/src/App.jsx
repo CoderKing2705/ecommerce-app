@@ -25,6 +25,7 @@ import OrderDetailsUser from './pages/OrderDetailsUser';
 import OrderManagement from './components/admin/OrderManagement';
 import OrderAnalytics from './components/admin/OrderAnalytics';
 import InventoryManagement from './components/admin/InventoryManagement';
+import ManageCategories from './pages/admin/ManageCategories';
 
 function AppContent() {
   return (
@@ -136,6 +137,14 @@ function AppContent() {
             element={
               <ProtectedRoute adminOnly={true}>
                 <InventoryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/categories"  // Add this new route
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <ManageCategories />
               </ProtectedRoute>
             }
           />
