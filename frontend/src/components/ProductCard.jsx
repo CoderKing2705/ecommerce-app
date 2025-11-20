@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingCart, Eye } from 'lucide-react';
+import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
+import { formatRating, getSafeRating } from '../utils/helpers';
 
 const ProductCard = ({ product }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const { user } = useAuth();
     const { addToCart, addToWishlist, isInCart, isInWishlist, loading } = useCart();
     const navigate = useNavigate();
+
+    const safeRating = getSafeRating(product.average_rating);
+    const displayRating = formatRating(product.average_rating);
 
     const handleAddToCart = (e) => {
         e.stopPropagation();
@@ -72,8 +76,8 @@ const ProductCard = ({ product }) => {
                         onClick={handleAddToWishlist}
                         disabled={loading || isProductInWishlist}
                         className={`p-2 rounded-full shadow-md transition-all duration-300 ${isProductInWishlist
-                                ? 'bg-red-500 text-white cursor-default animate-pulse'
-                                : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500 hover:scale-110'
+                            ? 'bg-red-500 text-white cursor-default animate-pulse'
+                            : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500 hover:scale-110'
                             } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title={isProductInWishlist ? "In wishlist - Go to wishlist" : "Add to wishlist"}
                     >
@@ -132,6 +136,24 @@ const ProductCard = ({ product }) => {
                     <h3 className="text-lg font-semibold text-gray-800 line-clamp-1">
                         {product.name}
                     </h3>
+
+                    <div className="flex items-center mt-2 space-x-2">
+                        <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                    key={star}
+                                    className={`h-3 w-3 ${star <= Math.round(safeRating)
+                                            ? 'text-yellow-400 fill-current'
+                                            : 'text-gray-300'
+                                        }`}
+                                />
+                            ))}
+                        </div>
+                        <span className="text-xs text-gray-600">
+                            {displayRating} ({product.review_count || 0})
+                        </span>
+                    </div>
+                    
                     <p className="text-gray-600 text-sm line-clamp-2 mt-1">
                         {product.description}
                     </p>
@@ -161,8 +183,8 @@ const ProductCard = ({ product }) => {
                             onClick={handleAddToCart}
                             disabled={product.stock_quantity === 0 || !user || loading || isProductInCart}
                             className={`p-2 rounded-md transition-all duration-300 flex items-center justify-center ${isProductInCart
-                                    ? 'bg-green-500 text-white cursor-default scale-110'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 disabled:bg-gray-400 disabled:cursor-not-allowed'
+                                ? 'bg-green-500 text-white cursor-default scale-110'
+                                : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 disabled:bg-gray-400 disabled:cursor-not-allowed'
                                 }`}
                             title={isProductInCart ? "Already in cart" : "Add to cart"}
                         >
@@ -176,8 +198,8 @@ const ProductCard = ({ product }) => {
                     onClick={handleAddToCart}
                     disabled={product.stock_quantity === 0 || !user || loading || isProductInCart}
                     className={`w-full mt-3 py-2 px-4 rounded-md transition-all duration-300 flex items-center justify-center gap-2 md:hidden ${isProductInCart
-                            ? 'bg-green-500 text-white cursor-default'
-                            : 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+                        ? 'bg-green-500 text-white cursor-default'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
                         }`}
                 >
                     <ShoppingCart className="h-4 w-4" />

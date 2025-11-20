@@ -155,4 +155,31 @@ export const inventoryAPI = {
     getSuppliers: () => api.get('/suppliers'),
     createSupplier: (data) => api.post('/suppliers', data),
 };
+
+// Reviews API
+export const reviewsAPI = {
+    getReviews: (productId, params = {}) =>
+        api.get(`/products/${productId}/reviews`, { params }),
+
+    createReview: (productId, data) =>
+        api.post(`/products/${productId}/reviews`, data, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
+    updateReview: (reviewId, data) =>
+        api.put(`/reviews/${reviewId}`, data, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+
+    deleteReview: (reviewId) =>
+        api.delete(`/reviews/${reviewId}`),
+
+    markHelpful: (reviewId) =>
+        api.post(`/reviews/${reviewId}/helpful`),
+
+    getReviewImages: (reviewId) =>
+        api.get(`/reviews/${reviewId}/images`)
+};
+
+
 export default api;

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import ReviewSection from '../components/reviews/ReviewSection';
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -226,8 +227,8 @@ const ProductDetails = () => {
                                             key={index}
                                             onClick={() => setSelectedImage(index)}
                                             className={`aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === index
-                                                    ? 'border-blue-600 ring-2 ring-blue-200'
-                                                    : 'border-transparent hover:border-gray-300'
+                                                ? 'border-blue-600 ring-2 ring-blue-200'
+                                                : 'border-transparent hover:border-gray-300'
                                                 }`}
                                         >
                                             <img
@@ -257,8 +258,8 @@ const ProductDetails = () => {
                                             <Star
                                                 key={star}
                                                 className={`h-5 w-5 ${star <= 4
-                                                        ? 'text-yellow-400 fill-current'
-                                                        : 'text-gray-300'
+                                                    ? 'text-yellow-400 fill-current'
+                                                    : 'text-gray-300'
                                                     }`}
                                             />
                                         ))}
@@ -347,8 +348,8 @@ const ProductDetails = () => {
                                     onClick={handleAddToCart}
                                     disabled={product.stock_quantity === 0 || isProductInCart}
                                     className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${isProductInCart
-                                            ? 'bg-green-500 text-white cursor-default'
-                                            : 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+                                        ? 'bg-green-500 text-white cursor-default'
+                                        : 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
                                         }`}
                                 >
                                     <ShoppingCart className="h-5 w-5" />
@@ -359,8 +360,8 @@ const ProductDetails = () => {
                                     onClick={handleAddToWishlist}
                                     disabled={isProductInWishlist}
                                     className={`py-4 px-6 border rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-3 ${isProductInWishlist
-                                            ? 'border-red-500 bg-red-50 text-red-600 cursor-default'
-                                            : 'border-gray-300 text-gray-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600'
+                                        ? 'border-red-500 bg-red-50 text-red-600 cursor-default'
+                                        : 'border-gray-300 text-gray-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600'
                                         }`}
                                 >
                                     <Heart className={`h-5 w-5 ${isProductInWishlist ? 'fill-current' : ''}`} />
@@ -421,6 +422,8 @@ const ProductDetails = () => {
                         </div>
                     </div>
                 </motion.div>
+
+                <ReviewSection productId={id} product={product} />
             </div>
         </div>
     );
