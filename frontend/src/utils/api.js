@@ -46,6 +46,16 @@ export const productsAPI = {
     create: (productData) => api.post('/products', productData),
     update: (id, productData) => api.put(`/products/${id}`, productData),
     delete: (id) => api.delete(`/products/${id}`),
+    search: (filters = {}) =>
+        api.get('/products/search', { params: filters }),
+
+    // Search suggestions (new)
+    getSearchSuggestions: (query) =>
+        api.get(`/products/search/suggestions?q=${query}`),
+
+    // Filter options (new)
+    getFilterOptions: () =>
+        api.get('/products/filters/options')
 };
 
 // Cart API
