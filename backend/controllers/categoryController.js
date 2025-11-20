@@ -4,13 +4,12 @@ export const getCategories = async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT 
-                category as name,
-                COUNT(*) as product_count,
-                MIN(created_at) as created_at
-            FROM products 
-            WHERE category IS NOT NULL AND category != ''
-            GROUP BY category
-            ORDER BY product_count DESC, name ASC
+                c.*,
+                COUNT(p.id) as product_count
+            FROM categories c
+            LEFT JOIN products p ON c.name = p.category  -- Temporary: until you migrate to category_id
+            GROUP BY c.id, c.name
+            ORDER BY c.name ASC
         `);
 
         res.json({
@@ -28,7 +27,7 @@ export const getCategories = async (req, res) => {
 
 export const createCategory = async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, description = '' } = req.body;
 
         if (!name || name.trim() === '') {
             return res.status(400).json({
@@ -37,27 +36,26 @@ export const createCategory = async (req, res) => {
             });
         }
 
-        // Check if category already exists
-        const existingCategory = await pool.query(
-            'SELECT category FROM products WHERE LOWER(category) = LOWER($1) LIMIT 1',
-            [name.trim()]
+        // Insert into categories table
+        const result = await pool.query(
+            'INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *',
+            [name.trim(), description.trim()]
         );
 
-        if (existingCategory.rows.length > 0) {
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        // Handle unique constraint violation
+        if (error.code === '23505') {
             return res.status(400).json({
                 success: false,
                 message: 'Category already exists'
             });
         }
 
-        // Since categories are stored in products table, we don't need to insert anything
-        // Just return success - the category will be created when a product uses it
-        res.json({
-            success: true,
-            data: { name: name.trim() }
-        });
-
-    } catch (error) {
         console.error('Create category error:', error);
         res.status(500).json({
             success: false,
@@ -69,7 +67,7 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
     try {
         const { oldName } = req.params;
-        const { newName } = req.body;
+        const { newName, description } = req.body;
 
         if (!newName || newName.trim() === '') {
             return res.status(400).json({
@@ -78,22 +76,38 @@ export const updateCategory = async (req, res) => {
             });
         }
 
-        // Update all products with the old category name
+        // Update category in categories table
         const result = await pool.query(
-            'UPDATE products SET category = $1 WHERE category = $2 RETURNING *',
+            'UPDATE categories SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP WHERE name = $3 RETURNING *',
+            [newName.trim(), description, oldName]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Category not found'
+            });
+        }
+
+        // Also update products that use this category (temporary solution)
+        await pool.query(
+            'UPDATE products SET category = $1 WHERE category = $2',
             [newName.trim(), oldName]
         );
 
         res.json({
             success: true,
-            data: {
-                oldName,
-                newName: newName.trim(),
-                updatedProducts: result.rows.length
-            }
+            data: result.rows[0]
         });
 
     } catch (error) {
+        if (error.code === '23505') {
+            return res.status(400).json({
+                success: false,
+                message: 'Category name already exists'
+            });
+        }
+
         console.error('Update category error:', error);
         res.status(500).json({
             success: false,
@@ -106,17 +120,30 @@ export const deleteCategory = async (req, res) => {
     try {
         const { name } = req.params;
 
-        // Set category to null for all products with this category
-        const result = await pool.query(
-            'UPDATE products SET category = NULL WHERE category = $1 RETURNING *',
+        // First, set products using this category to NULL or a default category
+        await pool.query(
+            'UPDATE products SET category = NULL WHERE category = $1',
             [name]
         );
+
+        // Then delete the category
+        const result = await pool.query(
+            'DELETE FROM categories WHERE name = $1 RETURNING *',
+            [name]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Category not found'
+            });
+        }
 
         res.json({
             success: true,
             data: {
-                deletedCategory: name,
-                affectedProducts: result.rows.length
+                deletedCategory: result.rows[0],
+                message: 'Category deleted successfully'
             }
         });
 

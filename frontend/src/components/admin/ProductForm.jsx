@@ -41,7 +41,7 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
 
     const fetchCategories = async () => {
         try {
-            const response = await categoriesAPI.getAll(); // Use categoriesAPI
+            const response = await categoriesAPI.getAll();
             setCategories(response.data.data);
         } catch (error) {
             console.error('Error fetching categories:', error);
@@ -249,17 +249,16 @@ const ProductForm = ({ product, onClose, onSuccess }) => {
                                         <select
                                             name="category"
                                             value={formData.category}
-                                            onChange={handleCategoryChange}
+                                            onChange={handleChange}
                                             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? 'border-red-500' : 'border-gray-300'
                                                 }`}
                                         >
                                             <option value="">Select Category</option>
                                             {categories.map(category => (
-                                                <option key={category.name} value={category.name}>
-                                                    {category.name} ({category.product_count})
+                                                <option key={category.id} value={category.name}>
+                                                    {category.name}
                                                 </option>
                                             ))}
-                                            <option value="_new">+ Add New Category</option>
                                         </select>
                                     ) : (
                                         <div className="flex gap-2">
