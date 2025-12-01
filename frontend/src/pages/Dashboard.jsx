@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Package, CreditCard, User, TrendingUp, Trash2, Plus, Minus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -16,6 +17,7 @@ const Dashboard = () => {
         updateCartQuantity,
         addToCart
     } = useCart();
+    const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState('overview');
 
@@ -266,7 +268,17 @@ const Dashboard = () => {
                                                 <span>Total ({cartItemsCount} items):</span>
                                                 <span>${totalCartValue.toFixed(2)}</span>
                                             </div>
-                                            <button className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                                            <button
+                                                onClick={() => {
+                                                    if (cart.length === 0) {
+                                                        alert('Your cart is empty!');
+                                                        return;
+                                                    }
+                                                    navigate('/checkout');
+                                                }}
+                                                className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={cart.length === 0}
+                                            >
                                                 Proceed to Checkout
                                             </button>
                                         </div>

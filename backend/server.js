@@ -48,6 +48,7 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import reviewRouter from './routes/reviewRouter.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import checkoutRoutes from './routes/checkoutRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -83,7 +84,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/products/:productId/reviews', reviewRouter);
 app.use('/api/categories', categoryRoutes);
-
+app.use('/api/checkout', checkoutRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({

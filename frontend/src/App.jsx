@@ -26,6 +26,7 @@ import OrderAnalytics from './components/admin/OrderAnalytics';
 import InventoryManagement from './components/admin/InventoryManagement';
 import ManageCategories from './pages/admin/ManageCategories';
 import SessionWarning from './components/SessionWarning'; // Import SessionWarning
+import Checkout from './components/Checkout';
 
 function App() {
   return (
@@ -149,6 +150,14 @@ function App() {
                   element={
                     <ProtectedRoute adminOnly={true}>
                       <ManageCategories />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path='/checkout'
+                  element={
+                    <ProtectedRoute>
+                      <Checkout />
                     </ProtectedRoute>
                   }
                 />
