@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, ShoppingBag } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ShoppingBag, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -18,6 +19,20 @@ const Login = () => {
     const location = useLocation();
 
     const from = location.state?.from?.pathname || '/dashboard';
+
+    // Check for session expiry message
+    useEffect(() => {
+        if (location.state?.message) {
+            toast(location.state.message, {
+                icon: location.state.type === 'warning' ? '⚠️' : 'ℹ️',
+                duration: 5000,
+                style: {
+                    background: location.state.type === 'warning' ? '#FEF3C7' : '#E0F2FE',
+                    color: location.state.type === 'warning' ? '#92400E' : '#0C4A6E',
+                },
+            });
+        }
+    }, [location.state]);
 
     useEffect(() => {
         if (user) {
@@ -40,9 +55,11 @@ const Login = () => {
         const result = await login(formData.email, formData.password);
 
         if (result.success) {
+            toast.success('Successfully logged in!');
             navigate(from, { replace: true });
         } else {
             setError(result.message);
+            toast.error(result.message);
         }
         setLoading(false);
     };
@@ -75,9 +92,10 @@ const Login = () => {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
+                            className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start"
                         >
-                            {error}
+                            <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                            <span>{error}</span>
                         </motion.div>
                     )}
 
@@ -168,6 +186,13 @@ const Login = () => {
                         </div>
                     </div>
                 </form>
+
+                {/* Session info note */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                    <p className="text-xs text-gray-500 text-center">
+                        <span className="font-medium">Note:</span> For security, your session will automatically expire after 15 minutes of inactivity.
+                    </p>
+                </div>
             </motion.div>
         </div>
     );

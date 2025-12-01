@@ -44,6 +44,8 @@ export const CartProvider = ({ children }) => {
             if (error.response?.status !== 401) {
                 setCart([]);
             }
+        } finally {
+            setLoading(false);
         }
     };
 

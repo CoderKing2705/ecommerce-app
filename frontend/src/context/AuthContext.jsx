@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -14,29 +14,58 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [sessionExpired, setSessionExpired] = useState(false);
+    const [lastActivity, setLastActivity] = useState(Date.now());
+    const inactivityTimerRef = useRef(null);
 
     // Set base URL for API calls
     useEffect(() => {
         axios.defaults.baseURL = 'http://localhost:5000/api';
+    }, []);
 
-        // Add response interceptor to handle 401 errors
-        const interceptor = axios.interceptors.response.use(
-            (response) => response,
-            (error) => {
-                if (error.response?.status === 401) {
-                    console.log('Auto-logout due to 401 error');
-                    localStorage.removeItem('token');
-                    delete axios.defaults.headers.common['Authorization'];
-                    setUser(null);
-                }
-                return Promise.reject(error);
+    // Set up activity tracking
+    const resetInactivityTimer = useCallback(() => {
+        setLastActivity(Date.now());
+        if (inactivityTimerRef.current) {
+            clearTimeout(inactivityTimerRef.current);
+        }
+
+        // Set timeout for 15 minutes (900000 ms)
+        inactivityTimerRef.current = setTimeout(() => {
+            if (user) {
+                console.log('Session expired due to inactivity');
+                setSessionExpired(true);
+                logout();
             }
-        );
+        }, 15 * 60 * 1000); // 15 minutes
+    }, [user]);
+
+    // Listen for user activity
+    useEffect(() => {
+        if (!user) return;
+
+        const handleUserActivity = () => {
+            resetInactivityTimer();
+        };
+
+        const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'];
+
+        events.forEach(event => {
+            window.addEventListener(event, handleUserActivity);
+        });
+
+        // Initial timer setup
+        resetInactivityTimer();
 
         return () => {
-            axios.interceptors.response.eject(interceptor);
+            events.forEach(event => {
+                window.removeEventListener(event, handleUserActivity);
+            });
+            if (inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current);
+            }
         };
-    }, []);
+    }, [user, resetInactivityTimer]);
 
     const verifyToken = useCallback(async () => {
         const token = localStorage.getItem('token');
@@ -47,34 +76,84 @@ export const AuthProvider = ({ children }) => {
         }
 
         try {
+            // Set the Authorization header
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
             const response = await axios.get('/auth/me');
             setUser(response.data);
+            setSessionExpired(false);
+            console.log('Token verified successfully');
         } catch (error) {
-            console.log('Token invalid, clearing auth...');
-            localStorage.removeItem('token');
-            delete axios.defaults.headers.common['Authorization'];
-            setUser(null);
+            console.log('Token verification failed:', error.response?.status);
+            handleAuthError(error);
         } finally {
             setLoading(false);
         }
     }, []);
 
+    const handleAuthError = useCallback((error) => {
+        const errorCode = error.response?.data?.code;
+
+        if (error.response?.status === 401) {
+            if (errorCode === 'SESSION_EXPIRED' || errorCode === 'TOKEN_EXPIRED') {
+                console.log('Session expired');
+                setSessionExpired(true);
+            }
+            // Clear auth data
+            localStorage.removeItem('token');
+            delete axios.defaults.headers.common['Authorization'];
+            setUser(null);
+        }
+    }, []);
+
+    // Add response interceptor to handle 401 errors globally
+    useEffect(() => {
+        const interceptor = axios.interceptors.response.use(
+            (response) => {
+                // Reset activity timer on successful response
+                if (user) {
+                    resetInactivityTimer();
+                }
+                return response;
+            },
+            (error) => {
+                if (error.response?.status === 401) {
+                    handleAuthError(error);
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+        };
+    }, [user, resetInactivityTimer, handleAuthError]);
+
+    // Initial token verification
     useEffect(() => {
         verifyToken();
     }, [verifyToken]);
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post('/auth/login', { email, password });
-            const { token, user } = response.data;
+            // Clear any existing headers first
+            delete axios.defaults.headers.common['Authorization'];
 
+            const response = await axios.post('/auth/login', { email, password });
+            const { token, user: userData } = response.data;
+
+            // Store token and set header
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            setUser(user);
 
-            return { success: true, user };
+            setUser(userData);
+            setSessionExpired(false);
+            resetInactivityTimer();
+
+            console.log('Login successful');
+            return { success: true, user: userData };
         } catch (error) {
+            console.log('Login failed:', error.response?.status);
             return {
                 success: false,
                 message: error.response?.data?.message || 'Login failed'
@@ -84,15 +163,22 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (email, password, name) => {
         try {
+            delete axios.defaults.headers.common['Authorization'];
+
             const response = await axios.post('/auth/register', { email, password, name });
-            const { token, user } = response.data;
+            const { token, user: userData } = response.data;
 
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            setUser(user);
 
-            return { success: true, user };
+            setUser(userData);
+            setSessionExpired(false);
+            resetInactivityTimer();
+
+            console.log('Registration successful');
+            return { success: true, user: userData };
         } catch (error) {
+            console.log('Registration failed:', error.response?.status);
             return {
                 success: false,
                 message: error.response?.data?.message || 'Registration failed'
@@ -100,11 +186,18 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
+    const logout = useCallback(() => {
+        console.log('Logging out...');
+        if (inactivityTimerRef.current) {
+            clearTimeout(inactivityTimerRef.current);
+        }
+
         localStorage.removeItem('token');
         delete axios.defaults.headers.common['Authorization'];
         setUser(null);
-    };
+        setSessionExpired(false);
+        setLastActivity(Date.now());
+    }, []);
 
     const handleGoogleAuth = () => {
         window.location.href = 'http://localhost:5000/api/auth/google';
@@ -116,7 +209,10 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         handleGoogleAuth,
-        loading
+        loading,
+        sessionExpired,
+        setSessionExpired,
+        resetInactivityTimer
     };
 
     return (

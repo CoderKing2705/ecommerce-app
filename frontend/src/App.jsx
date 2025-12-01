@@ -1,6 +1,6 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { SessionProvider } from './context/SessionContext'; // Import SessionProvider
 import { CartProvider } from './context/CartContext';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
@@ -22,145 +22,142 @@ import OrderDetails from './pages/admin/OrderDetails';
 import ManageOrders from './pages/admin/ManageOrders';
 import MyOrders from './pages/MyOrders';
 import OrderDetailsUser from './pages/OrderDetailsUser';
-import OrderManagement from './components/admin/OrderManagement';
 import OrderAnalytics from './components/admin/OrderAnalytics';
 import InventoryManagement from './components/admin/InventoryManagement';
 import ManageCategories from './pages/admin/ManageCategories';
-
-function AppContent() {
-  return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <Navbar />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              borderRadius: '10px',
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/auth/success" element={<OAuthSuccess />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <Analytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/wishlist" element={<Wishlist />} />
-          <Route path="/product/:id" element={<ProductDetails />} />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/products"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <ManageProducts />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <ManageUsers />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/orders"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <ManageOrders />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/orders/:id"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <OrderDetails />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/orders"
-            element={
-              <ProtectedRoute>
-                <MyOrders />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/orders/:id"
-            element={
-              <ProtectedRoute>
-                <OrderDetailsUser />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/analytics"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <OrderAnalytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/inventory"
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <InventoryManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/categories"  // Add this new route
-            element={
-              <ProtectedRoute adminOnly={true}>
-                <ManageCategories />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </div>
-    </Router>
-  );
-}
+import SessionWarning from './components/SessionWarning'; // Import SessionWarning
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <SessionProvider>
+          <CartProvider>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+              <SessionWarning /> {/* Add SessionWarning component */}
+              <Navbar />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    borderRadius: '10px',
+                    background: '#363636',
+                    color: '#fff',
+                  },
+                }}
+              />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/auth/success" element={<OAuthSuccess />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <Analytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route
+                  path="/admin/dashboard"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/products"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <ManageProducts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <ManageUsers />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/orders"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <ManageOrders />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/orders/:id"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <OrderDetails />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={
+                    <ProtectedRoute>
+                      <MyOrders />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders/:id"
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetailsUser />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/analytics"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <OrderAnalytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/inventory"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <InventoryManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/categories"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <ManageCategories />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </div>
+          </CartProvider>
+        </SessionProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
