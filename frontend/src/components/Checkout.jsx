@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Check, Truck, MapPin, Package, Home, Loader2, Clock, Trash2 } from 'lucide-react';
 import { checkoutAPI } from '../utils/api';
 import toast from 'react-hot-toast';
+import { FaCheckCircle } from 'react-icons/fa';
 
 const Checkout = () => {
     const { cart, getCartTotal, clearCart } = useCart();
@@ -186,12 +187,13 @@ const Checkout = () => {
             const response = await checkoutAPI.createSession(requestData);
             const result = response.data;
 
-            if (!response.ok) {
+            // Check for HTTP error status (axios doesn't have .ok property)
+            if (response.status < 200 || response.status >= 300) {
                 throw new Error(result.message || 'Order failed');
             }
 
             // Success! For COD, the backend should return orderId
-            setOrderId(result.orderId);
+            setOrderId(result.orderId || result.orderNumber);
             setOrderPlaced(true);
 
             // Clear cart after successful order
@@ -200,8 +202,11 @@ const Checkout = () => {
             if (cleared) {
                 toast.success('Order placed successfully! Cash on Delivery selected.', {
                     duration: 5000,
-                    icon: '✅',
                     position: 'top-right',
+                    style: {
+                        background: '#10B981',
+                        color: '#fff',
+                    },
                 });
             }
 
@@ -213,8 +218,11 @@ const Checkout = () => {
             // Show error toast
             toast.error(errorMsg, {
                 duration: 5000,
-                icon: '❌',
                 position: 'top-right',
+                style: {
+                    background: '#EF4444',
+                    color: '#fff',
+                },
             });
         } finally {
             setLoading(false);
@@ -305,15 +313,20 @@ const Checkout = () => {
     };
 
     useEffect(() => {
+
         if (orderPlaced) {
+
             // Redirect to My Orders page after 3 seconds
             const timer = setTimeout(() => {
                 navigate('/orders');
             }, 3000);
 
-            return () => clearTimeout(timer);
+            return () => {
+
+                clearTimeout(timer);
+            };
         }
-    }, [orderPlaced, navigate]);
+    }, [orderPlaced, navigate, orderId]);
 
     if (orderPlaced) {
         return (
