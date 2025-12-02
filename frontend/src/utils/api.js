@@ -199,4 +199,14 @@ export const categoriesAPI = {
     delete: (name) => api.delete(`/categories/${name}`),
 };
 
+export const checkoutAPI = {
+    createSession: (data) => api.post('/checkout/create-session', data),
+    getCheckoutSummary: () => api.get('/checkout/summary'),
+    getShippingAddresses: () => api.get('/checkout/shipping-addresses'),
+    createShippingAddress: (data) => api.post('/checkout/shipping-addresses', data),
+    updateShippingAddress: (id, data) => api.put(`/checkout/shipping-addresses/${id}`, data),
+    deleteShippingAddress: (id) => api.delete(`/checkout/shipping-addresses/${id}`),
+    getOrderDetails: (orderId) => api.get(`/checkout/order/${orderId}`),
+};
+
 export default api;

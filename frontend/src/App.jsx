@@ -27,6 +27,9 @@ import InventoryManagement from './components/admin/InventoryManagement';
 import ManageCategories from './pages/admin/ManageCategories';
 import SessionWarning from './components/SessionWarning'; // Import SessionWarning
 import Checkout from './components/Checkout';
+import CheckoutSuccess from './pages/CheckoutSuccess';
+import ShippingAddresses from './components/ShippingAddresses';
+import AccountSettings from './pages/AccountSettings';
 
 function App() {
   return (
@@ -158,6 +161,49 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Checkout />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/checkout/success"
+                  element={
+                    <ProtectedRoute>
+                      <CheckoutSuccess />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/checkout/cancel"
+                  element={
+                    <ProtectedRoute>
+                      <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center">
+                          <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Cancelled</h2>
+                          <p className="mb-6">Your payment was cancelled. No charges were made.</p>
+                          <button
+                            onClick={() => navigate('/checkout')}
+                            className="bg-blue-600 text-white py-2 px-6 rounded-lg"
+                          >
+                            Return to Checkout
+                          </button>
+                        </div>
+                      </div>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/shipping-addresses"
+                  element={
+                    <ProtectedRoute>
+                      <ShippingAddresses />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/account/settings"
+                  element={
+                    <ProtectedRoute>
+                      <AccountSettings />
                     </ProtectedRoute>
                   }
                 />

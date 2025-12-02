@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Heart, Package, CreditCard, User, TrendingUp, Trash2, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Heart, Package, CreditCard, User, TrendingUp, Trash2, Plus, Minus, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { checkoutAPI } from '../utils/api';
+import ShippingAddresses from '../components/ShippingAddresses';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -20,7 +22,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState('overview');
-
+    const [addressCount, setAddressCount] = useState(0);
     const totalCartValue = getCartTotal();
     const cartItemsCount = getCartItemsCount();
 
@@ -46,6 +48,21 @@ const Dashboard = () => {
         await removeFromWishlist(wishlistItem.id);
     };
 
+    useEffect(() => {
+        const fetchAddressCount = async () => {
+            try {
+                const response = await checkoutAPI.getShippingAddresses();
+                setAddressCount(response.data.length);
+            } catch (error) {
+                console.error('Error fetching address count:', error);
+            }
+        };
+
+        if (user) {
+            fetchAddressCount();
+        }
+    }, [user]);
+
     return (
         <div className="min-h-screen py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -60,7 +77,7 @@ const Dashboard = () => {
                 </motion.div>
 
                 {/* Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         className="bg-white p-6 rounded-xl shadow-md border border-gray-100"
@@ -112,13 +129,30 @@ const Dashboard = () => {
                             </div>
                         </div>
                     </motion.div>
+
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="bg-white p-6 rounded-xl shadow-md border border-gray-100 cursor-pointer"
+                        onClick={() => setActiveTab('addresses')}
+                    >
+                        <div className="flex items-center">
+                            <MapPin className="h-8 w-8 text-green-600" />
+                            <div className="ml-4">
+                                <p className="text-sm text-gray-600">Shipping Addresses</p>
+                                <p className="text-2xl font-bold text-gray-800">{addressCount}</p>
+                                <p className="text-xs text-blue-600 hover:text-blue-800 mt-1">
+                                    Click to manage →
+                                </p>
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
 
                 {/* Tabs */}
                 <div className="bg-white rounded-xl shadow-md overflow-hidden">
                     <div className="border-b border-gray-200">
                         <nav className="flex -mb-px">
-                            {['overview', 'cart', 'wishlist', 'activity'].map((tab) => (
+                            {['overview', 'cart', 'wishlist', 'activity', 'addresses'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -131,6 +165,7 @@ const Dashboard = () => {
                                     {tab === 'cart' && <ShoppingCart className="h-5 w-5 mr-2" />}
                                     {tab === 'wishlist' && <Heart className="h-5 w-5 mr-2" />}
                                     {tab === 'activity' && <Package className="h-5 w-5 mr-2" />}
+                                    {tab === 'addresses' && <MapPin className="h-5 w-5 mr-2" />}
                                     {tab}
                                 </button>
                             ))}
@@ -381,6 +416,13 @@ const Dashboard = () => {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'addresses' && (
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-4">Shipping Addresses</h3>
+                                <ShippingAddresses />
                             </div>
                         )}
                     </div>
