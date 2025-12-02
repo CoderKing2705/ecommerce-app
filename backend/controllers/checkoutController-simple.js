@@ -143,7 +143,6 @@ export const createCheckoutSession = async (req, res) => {
         await client.query('DELETE FROM cart WHERE user_id = $1', [userId]);
 
         await client.query('COMMIT');
-        client.release();
 
         return res.json({
             success: true,

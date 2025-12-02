@@ -304,6 +304,17 @@ const Checkout = () => {
         }
     };
 
+    useEffect(() => {
+        if (orderPlaced) {
+            // Redirect to My Orders page after 3 seconds
+            const timer = setTimeout(() => {
+                navigate('/orders');
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [orderPlaced, navigate]);
+
     if (orderPlaced) {
         return (
             <div className="min-h-screen py-12">
@@ -324,9 +335,17 @@ const Checkout = () => {
                                 <Clock className="h-8 w-8 text-yellow-600 mr-2" />
                                 <p className="text-lg font-semibold text-gray-800">Cash on Delivery</p>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2">Order ID</p>
+                            <p className="text-sm text-gray-600 mb-2">Order Number</p>
                             <p className="text-xl font-bold text-gray-800">{orderId}</p>
-                            <p className="text-gray-600 mt-4">Please keep this Order ID for reference</p>
+                            <p className="text-gray-600 mt-4">Please keep this Order Number for reference</p>
+
+                            {/* Add redirect message */}
+                            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-blue-700 text-sm">
+                                    <strong>Note:</strong> You will be redirected to your orders page in 3 seconds...
+                                </p>
+                            </div>
+
                             <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                                 <p className="text-yellow-700 text-sm">
                                     <strong>Payment Instructions:</strong> Please have the exact amount ready for the delivery person.
@@ -337,16 +356,16 @@ const Checkout = () => {
 
                         <div className="space-y-4">
                             <button
-                                onClick={() => navigate('/dashboard')}
+                                onClick={() => navigate('/orders')}
                                 className="bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors"
                             >
-                                Back to Dashboard
+                                View My Orders Now
                             </button>
                             <button
-                                onClick={() => navigate('/orders')}
+                                onClick={() => navigate('/dashboard')}
                                 className="ml-4 bg-gray-200 text-gray-800 py-3 px-8 rounded-lg hover:bg-gray-300 transition-colors"
                             >
-                                View Order Details
+                                Back to Dashboard
                             </button>
                         </div>
                     </motion.div>
