@@ -153,7 +153,6 @@ export const createCheckoutSession = async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('Checkout error:', error);
         res.status(500).json({
             message: 'Checkout failed',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -220,14 +219,12 @@ export const getCheckoutSummary = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get checkout summary error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
 // Get user's shipping addresses
 export const getShippingAddresses = async (req, res) => {
-    console.log('Getting shipping addresses for user:', req.user?.id);
 
     try {
         const addresses = await pool.query(
@@ -235,11 +232,9 @@ export const getShippingAddresses = async (req, res) => {
             [req.user.id]
         );
 
-        console.log('Found addresses:', addresses.rows.length);
 
         res.json(addresses.rows);
     } catch (error) {
-        console.error('Get shipping addresses error:', error);
         res.status(500).json({
             message: 'Server error',
             error: error.message
@@ -283,7 +278,7 @@ export const createShippingAddress = async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('Create shipping address error:', error);
+
         res.status(500).json({
             message: 'Server error',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -343,7 +338,6 @@ export const updateShippingAddress = async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('Update shipping address error:', error);
         res.status(500).json({ message: 'Server error' });
     } finally {
         client.release();
@@ -367,7 +361,6 @@ export const deleteShippingAddress = async (req, res) => {
 
         res.json({ message: 'Address deleted successfully' });
     } catch (error) {
-        console.error('Delete shipping address error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -416,7 +409,6 @@ export const getOrderDetails = async (req, res) => {
         res.json(order.rows[0]);
 
     } catch (error) {
-        console.error('Get order details error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

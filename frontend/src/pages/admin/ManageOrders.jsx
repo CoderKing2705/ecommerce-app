@@ -55,7 +55,6 @@ const ManageOrders = () => {
             setTotalPages(response.data.totalPages);
             setCurrentPage(response.data.currentPage);
         } catch (error) {
-            console.error('Error fetching orders:', error);
             toast.error(handleAPIError(error));
         } finally {
             setLoading(false);
@@ -70,7 +69,6 @@ const ManageOrders = () => {
             ));
             toast.success(`Order status updated to ${newStatus}`);
         } catch (error) {
-            console.error('Error updating order status:', error);
             toast.error(handleAPIError(error));
         }
     };
@@ -98,8 +96,6 @@ const ManageOrders = () => {
         try {
             const { order, refundAmount, reason } = refundModal;
 
-            console.log('Starting refund process for order:', order.id);
-
             // Validate inputs
             if (!refundAmount || refundAmount <= 0) {
                 toast.error('Please enter a valid refund amount');
@@ -116,12 +112,6 @@ const ManageOrders = () => {
                 toast.error('Refund amount cannot exceed order total');
                 return;
             }
-
-            console.log('Sending refund request:', {
-                orderId: order.id,
-                refund_amount: amount,
-                reason: reason || 'Refund processed by admin'
-            });
 
             // Make API call
             await adminAPI.processRefund(order.id, {
@@ -148,8 +138,6 @@ const ManageOrders = () => {
             closeRefundModal();
 
         } catch (error) {
-            console.error('Error processing refund:', error);
-            console.error('Error details:', error.response?.data);
 
             // Show specific error message
             const errorMessage = error.response?.data?.error ||
@@ -198,7 +186,6 @@ const ManageOrders = () => {
             setBulkAction('');
             toast.success(`Bulk action completed for ${selectedOrders.length} orders`);
         } catch (error) {
-            console.error('Bulk action error:', error);
             toast.error(handleAPIError(error));
         }
     };

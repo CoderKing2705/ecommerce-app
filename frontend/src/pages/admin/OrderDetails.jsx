@@ -139,8 +139,6 @@ const OrderDetails = () => {
             return sum + itemPrice;
         }, 0) || 0;
 
-        console.log('Calculated subtotal:', subtotal);
-
         // Safely parse other amounts
         const tax = parseFloat(order.tax_amount) || 0;
         const shipping = parseFloat(order.shipping_cost) || 0;

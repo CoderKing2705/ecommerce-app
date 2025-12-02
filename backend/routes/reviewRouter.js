@@ -9,7 +9,6 @@ const router = express.Router({ mergeParams: true }); // ✅ ADD THIS
 router.get('/', async (req, res) => {
     try {
         const { productId } = req.params; // Now this will work
-        console.log('📝 Fetching reviews for product:', productId); // Debug log
 
         const {
             page = 1,
@@ -81,7 +80,6 @@ router.get('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching reviews:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to fetch reviews',
@@ -98,7 +96,6 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
 
         // ✅ FIX: Get productId from req.params (now available due to mergeParams: true)
         const { productId } = req.params;
-        console.log('📝 Creating review for product:', productId); // Debug log
 
         const { rating, title, comment } = req.body;
         const userId = req.user.id;
@@ -173,7 +170,6 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('Error creating review:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to create review',
@@ -227,7 +223,6 @@ router.put('/:reviewId', auth, async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('Error updating review:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to update review',
@@ -274,7 +269,6 @@ router.delete('/:reviewId', auth, async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('Error deleting review:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to delete review',
@@ -323,7 +317,6 @@ router.post('/:reviewId/helpful', auth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error updating helpful vote:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to update helpful vote',
@@ -348,7 +341,6 @@ router.get('/:reviewId/images', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching review images:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to fetch review images',

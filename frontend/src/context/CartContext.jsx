@@ -22,11 +22,9 @@ export const CartProvider = ({ children }) => {
     // Only fetch cart/wishlist when user is authenticated
     useEffect(() => {
         if (user) {
-            console.log('User authenticated, fetching cart and wishlist...');
             fetchCart();
             fetchWishlist();
         } else {
-            console.log('No user, clearing cart and wishlist...');
             setCart([]);
             setWishlist([]);
         }
@@ -39,7 +37,6 @@ export const CartProvider = ({ children }) => {
             const response = await cartAPI.get();
             setCart(response.data);
         } catch (error) {
-            console.log('Failed to fetch cart:', error.response?.status);
             // Don't set state on error to avoid loops
             if (error.response?.status !== 401) {
                 setCart([]);
@@ -56,7 +53,6 @@ export const CartProvider = ({ children }) => {
             const response = await wishlistAPI.get();
             setWishlist(response.data);
         } catch (error) {
-            console.log('Failed to fetch wishlist:', error.response?.status);
             // Don't set state on error to avoid loops
             if (error.response?.status !== 401) {
                 setWishlist([]);
@@ -84,7 +80,7 @@ export const CartProvider = ({ children }) => {
                 icon: '🛒',
             });
         } catch (error) {
-            console.error('Error adding to cart:', error);
+
             if (error.response?.status === 400) {
                 toast.error(error.response.data.message);
             } else if (error.response?.status === 401) {
@@ -104,7 +100,6 @@ export const CartProvider = ({ children }) => {
             setCart(prev => prev.filter(item => item.id !== cartItemId));
             toast.success('Item removed from cart!');
         } catch (error) {
-            console.error('Error removing from cart:', error);
             toast.error('Failed to remove item from cart');
         } finally {
             setLoading(false);
@@ -129,7 +124,6 @@ export const CartProvider = ({ children }) => {
                 item.id === cartItemId ? { ...item, quantity } : item
             ));
         } catch (error) {
-            console.error('Error updating cart quantity:', error);
             if (error.response?.status === 400) {
                 toast.error(error.response.data.message);
             } else {
@@ -152,7 +146,6 @@ export const CartProvider = ({ children }) => {
                 icon: '❤️',
             });
         } catch (error) {
-            console.error('Error adding to wishlist:', error);
             if (error.response?.status === 401) {
                 toast.error('Please login again');
             } else {
@@ -176,7 +169,6 @@ export const CartProvider = ({ children }) => {
             toast.success('Cart cleared successfully!');
             return true;
         } catch (error) {
-            console.error('Error clearing cart:', error);
             // Still clear local state even if API fails
             setCart([]);
             toast.error('Cart cleared locally, but server sync failed');
@@ -193,7 +185,6 @@ export const CartProvider = ({ children }) => {
             setWishlist(prev => prev.filter(item => item.id !== wishlistItemId));
             toast.success('Item removed from wishlist!');
         } catch (error) {
-            console.error('Error removing from wishlist:', error);
             toast.error('Failed to remove item from wishlist');
         } finally {
             setLoading(false);

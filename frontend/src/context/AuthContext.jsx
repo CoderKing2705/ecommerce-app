@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
         // Set timeout for 15 minutes (900000 ms)
         inactivityTimerRef.current = setTimeout(() => {
             if (user) {
-                console.log('Session expired due to inactivity');
                 setSessionExpired(true);
                 logout();
             }
@@ -82,9 +81,7 @@ export const AuthProvider = ({ children }) => {
             const response = await axios.get('/auth/me');
             setUser(response.data);
             setSessionExpired(false);
-            console.log('Token verified successfully');
         } catch (error) {
-            console.log('Token verification failed:', error.response?.status);
             handleAuthError(error);
         } finally {
             setLoading(false);
@@ -96,7 +93,6 @@ export const AuthProvider = ({ children }) => {
 
         if (error.response?.status === 401) {
             if (errorCode === 'SESSION_EXPIRED' || errorCode === 'TOKEN_EXPIRED') {
-                console.log('Session expired');
                 setSessionExpired(true);
             }
             // Clear auth data
@@ -149,11 +145,8 @@ export const AuthProvider = ({ children }) => {
             setUser(userData);
             setSessionExpired(false);
             resetInactivityTimer();
-
-            console.log('Login successful');
             return { success: true, user: userData };
         } catch (error) {
-            console.log('Login failed:', error.response?.status);
             return {
                 success: false,
                 message: error.response?.data?.message || 'Login failed'
@@ -174,11 +167,8 @@ export const AuthProvider = ({ children }) => {
             setUser(userData);
             setSessionExpired(false);
             resetInactivityTimer();
-
-            console.log('Registration successful');
             return { success: true, user: userData };
         } catch (error) {
-            console.log('Registration failed:', error.response?.status);
             return {
                 success: false,
                 message: error.response?.data?.message || 'Registration failed'
@@ -187,7 +177,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = useCallback(() => {
-        console.log('Logging out...');
         if (inactivityTimerRef.current) {
             clearTimeout(inactivityTimerRef.current);
         }

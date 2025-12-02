@@ -52,6 +52,7 @@ const Dashboard = () => {
         const fetchAddressCount = async () => {
             try {
                 const response = await checkoutAPI.getShippingAddresses();
+                
                 setAddressCount(response.data.length);
             } catch (error) {
                 console.error('Error fetching address count:', error);

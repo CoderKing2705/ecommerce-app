@@ -41,7 +41,6 @@ export const SessionProvider = ({ children }) => {
 
             // Set logout timer (15 minutes)
             activityTimer.current = setTimeout(async () => {
-                console.log('Session expired due to inactivity');
                 await logout();
                 navigate('/login', {
                     state: {

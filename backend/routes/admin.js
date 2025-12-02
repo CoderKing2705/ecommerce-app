@@ -12,7 +12,6 @@ router.use(admin);
 // Get dashboard statistics
 router.get('/stats', adminAuth, async (req, res) => {
     try {
-        console.log('Fetching admin stats...');
 
         // Initialize all stats with default values
         const stats = {
@@ -138,13 +137,10 @@ router.get('/stats', adminAuth, async (req, res) => {
             console.error('Error in individual queries:', queryError);
             // Continue with default values
         }
-
-        console.log('Sending stats response:', stats);
         // Send single response
         res.json(stats);
 
     } catch (error) {
-        console.error('Error in admin stats route:', error);
 
         // Only send error response if headers haven't been sent
         if (!res.headersSent) {
@@ -206,7 +202,6 @@ router.get('/users', adminAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching users:', error);
         res.status(500).json({
             error: 'Failed to fetch users',
             details: error.message
@@ -235,7 +230,6 @@ router.put('/users/:id/role', async (req, res) => {
 
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Update user role error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -263,7 +257,6 @@ router.get('/user-activities', async (req, res) => {
 
         res.json(activities.rows);
     } catch (error) {
-        console.error('Get user activities error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -320,11 +313,6 @@ router.get('/orders', adminAuth, async (req, res) => {
         query += ' GROUP BY o.id, u.name, u.email ORDER BY o.created_at DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
         queryParams.push(limit, offset);
 
-        console.log('Query:', query);
-        console.log('Query Params:', queryParams);
-        console.log('Count Query:', countQuery);
-        console.log('Count Params:', countParams);
-
         const ordersResult = await pool.query(query, queryParams);
         const countResult = await pool.query(countQuery, countParams);
 
@@ -339,7 +327,6 @@ router.get('/orders', adminAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching orders:', error);
         res.status(500).json({
             error: 'Failed to fetch orders',
             details: error.message
@@ -373,7 +360,6 @@ router.put('/orders/:id/status', adminAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error updating order status:', error);
         res.status(500).json({ error: 'Failed to update order status' });
     }
 });
@@ -451,7 +437,6 @@ router.get('/orders/:id/details', adminAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching order details:', error);
         res.status(500).json({
             error: 'Failed to fetch order details',
             details: error.message
@@ -490,7 +475,6 @@ router.post('/orders/:id/status-history', adminAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error adding status history:', error);
         res.status(500).json({ error: 'Failed to update order status' });
     }
 });
@@ -513,7 +497,6 @@ router.post('/orders/:id/notes', adminAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error adding order note:', error);
         res.status(500).json({ error: 'Failed to add note' });
     }
 });
