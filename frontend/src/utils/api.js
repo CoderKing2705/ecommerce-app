@@ -64,6 +64,7 @@ export const cartAPI = {
     add: (productId, quantity = 1) => api.post('/cart', { product_id: productId, quantity }),
     remove: (cartItemId) => api.delete(`/cart/${cartItemId}`),
     update: (cartItemId, quantity) => api.put(`/cart/${cartItemId}`, { quantity }),
+    clear: () => api.delete('/cart/clear')
 };
 
 // Wishlist API (you'll need to create these endpoints in backend)

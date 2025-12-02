@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, Truck, MapPin, Package, Home, Loader2, Clock, Trash2 } from 'lucide-react';
 import { checkoutAPI } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const Checkout = () => {
     const { cart, getCartTotal, clearCart } = useCart();
@@ -194,13 +195,27 @@ const Checkout = () => {
             setOrderPlaced(true);
 
             // Clear cart after successful order
-            await clearCart();
+            const cleared = await clearCart();
+
+            if (cleared) {
+                toast.success('Order placed successfully! Cash on Delivery selected.', {
+                    duration: 5000,
+                    icon: '✅',
+                    position: 'top-right',
+                });
+            }
 
         } catch (error) {
             console.error('Order failed:', error);
             const errorMsg = error.response?.data?.message || error.message || 'Order failed. Please try again.';
             setError(errorMsg);
-            alert(errorMsg);
+
+            // Show error toast
+            toast.error(errorMsg, {
+                duration: 5000,
+                icon: '❌',
+                position: 'top-right',
+            });
         } finally {
             setLoading(false);
         }

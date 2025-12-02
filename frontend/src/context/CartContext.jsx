@@ -163,6 +163,29 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    const clearCart = async () => {
+        try {
+            setLoading(true);
+
+            // Call API to clear cart on backend
+            await cartAPI.clear(); // This will work once you add the endpoint
+
+            // Clear the local cart state
+            setCart([]);
+
+            toast.success('Cart cleared successfully!');
+            return true;
+        } catch (error) {
+            console.error('Error clearing cart:', error);
+            // Still clear local state even if API fails
+            setCart([]);
+            toast.error('Cart cleared locally, but server sync failed');
+            return true;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const removeFromWishlist = async (wishlistItemId) => {
         try {
             setLoading(true);
@@ -208,6 +231,7 @@ export const CartProvider = ({ children }) => {
         isInWishlist,
         getCartTotal,
         getCartItemsCount,
+        clearCart,
     };
 
     return (
