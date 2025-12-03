@@ -9,7 +9,7 @@ export const createCheckoutSession = async (req, res) => {
         await client.query('BEGIN');
 
         const userId = req.user.id;
-        const { shippingAddressId, saveAsDefault = true } = req.body;
+        const { shippingAddressId, billingAddressId, saveAsDefault = true } = req.body;
 
         // Get user's cart items
         const cartItems = await client.query(
@@ -35,7 +35,47 @@ export const createCheckoutSession = async (req, res) => {
             }
         }
 
+        let billingAddressIdToUse;
         let shippingAddressIdToUse;
+
+        if (billingAddressId) {
+            // Use existing billing address
+            const billingResult = await client.query(
+                'SELECT id FROM billing_addresses WHERE id = $1 AND user_id = $2',
+                [billingAddressId, userId]
+            );
+
+            if (billingResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ message: 'Invalid billing address' });
+            }
+
+            billingAddressIdToUse = billingAddressId;
+        } else if (req.body.billingAddress) {
+            // Create new billing address
+            const { firstName, lastName, email, phone, addressLine1, addressLine2, city, state, zipCode, country } = req.body.billingAddress;
+
+            if (saveAsDefault) {
+                await client.query(
+                    'UPDATE billing_addresses SET is_default = false WHERE user_id = $1',
+                    [userId]
+                );
+            }
+
+            const newBillingAddress = await client.query(
+                `INSERT INTO billing_addresses 
+                 (user_id, first_name, last_name, email, phone, address_line1, address_line2, city, state, zip_code, country, is_default)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                 RETURNING id`,
+                [userId, firstName, lastName, email, phone, addressLine1, addressLine2 || '',
+                    city, state, zipCode, country || 'USA', saveAsDefault]
+            );
+
+            billingAddressIdToUse = newBillingAddress.rows[0].id;
+        } else {
+            // If no billing address provided, use shipping address
+            billingAddressIdToUse = shippingAddressIdToUse;
+        }
 
         if (shippingAddressId) {
             // Use existing address - verify it belongs to user
@@ -115,11 +155,13 @@ export const createCheckoutSession = async (req, res) => {
         // Create order in database with foreign key
         const order = await client.query(
             `INSERT INTO orders 
-     (order_number, user_id, total_amount, shipping_fee, tax_amount, status, payment_method, shipping_address_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     (order_number, user_id, total_amount, shipping_fee, tax_amount, status, payment_method, shipping_address_id, billing_address_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-            [orderNumber, userId, totalAmount, shippingFee, tax, 'confirmed', 'cod', shippingAddressIdToUse]
+            [orderNumber, userId, totalAmount, shippingFee, tax, 'confirmed', 'cod',
+                shippingAddressIdToUse, billingAddressIdToUse]
         );
+
 
         const orderId = order.rows[0].id;
 
@@ -393,10 +435,22 @@ export const getOrderDetails = async (req, res) => {
                 sa.city, 
                 sa.state, 
                 sa.zip_code, 
-                sa.country
+                sa.country,
+                ba.first_name, 
+                ba.last_name, 
+                ba.email, 
+                ba.phone,
+                ba.address_line1, 
+                ba.address_line2, 
+                ba.city, 
+                ba.state, 
+                ba.zip_code, 
+                ba.country,
+
              FROM orders o
              LEFT JOIN order_items oi ON o.id = oi.order_id
              LEFT JOIN shipping_addresses sa ON o.shipping_address_id = sa.id
+             LEFT JOIN billing_addresses ba ON o.billing_address_id = ba.id
              WHERE o.id = $1 AND o.user_id = $2
              GROUP BY o.id, sa.id`,
             [orderId, userId]

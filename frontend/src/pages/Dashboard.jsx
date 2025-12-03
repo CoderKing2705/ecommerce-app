@@ -6,6 +6,7 @@ import { ShoppingCart, Heart, Package, CreditCard, User, TrendingUp, Trash2, Plu
 import { useNavigate } from 'react-router-dom';
 import { checkoutAPI } from '../utils/api';
 import ShippingAddresses from '../components/ShippingAddresses';
+import BillingAddresses from './BillingAddresses';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -22,7 +23,8 @@ const Dashboard = () => {
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState('overview');
-    const [addressCount, setAddressCount] = useState(0);
+    const [shippingAddressCount, setShippingAddressCount] = useState(0);
+    const [billingAddressCount, setBillingAddressCount] = useState(0);
     const totalCartValue = getCartTotal();
     const cartItemsCount = getCartItemsCount();
 
@@ -49,18 +51,20 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
-        const fetchAddressCount = async () => {
+        const fetchAddressCounts = async () => {
             try {
-                const response = await checkoutAPI.getShippingAddresses();
+                const shippingResponse = await checkoutAPI.getShippingAddresses();
+                const billingResponse = await checkoutAPI.getBillingAddresses();
                 
-                setAddressCount(response.data.length);
+                setShippingAddressCount(shippingResponse.data.length);
+                setBillingAddressCount(billingResponse.data.length);
             } catch (error) {
-                console.error('Error fetching address count:', error);
+                console.error('Error fetching address counts:', error);
             }
         };
 
         if (user) {
-            fetchAddressCount();
+            fetchAddressCounts();
         }
     }, [user]);
 
@@ -131,16 +135,35 @@ const Dashboard = () => {
                         </div>
                     </motion.div>
 
+                    {/* Shipping Addresses Stat Card */}
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         className="bg-white p-6 rounded-xl shadow-md border border-gray-100 cursor-pointer"
-                        onClick={() => setActiveTab('addresses')}
+                        onClick={() => setActiveTab('shipping')}
                     >
                         <div className="flex items-center">
-                            <MapPin className="h-8 w-8 text-green-600" />
+                            <MapPin className="h-8 w-8 text-blue-600" />
                             <div className="ml-4">
                                 <p className="text-sm text-gray-600">Shipping Addresses</p>
-                                <p className="text-2xl font-bold text-gray-800">{addressCount}</p>
+                                <p className="text-2xl font-bold text-gray-800">{shippingAddressCount}</p>
+                                <p className="text-xs text-blue-600 hover:text-blue-800 mt-1">
+                                    Click to manage →
+                                </p>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Billing Addresses Stat Card */}
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        className="bg-white p-6 rounded-xl shadow-md border border-gray-100 cursor-pointer"
+                        onClick={() => setActiveTab('billing')}
+                    >
+                        <div className="flex items-center">
+                            <CreditCard className="h-8 w-8 text-green-600" />
+                            <div className="ml-4">
+                                <p className="text-sm text-gray-600">Billing Addresses</p>
+                                <p className="text-2xl font-bold text-gray-800">{billingAddressCount}</p>
                                 <p className="text-xs text-blue-600 hover:text-blue-800 mt-1">
                                     Click to manage →
                                 </p>
@@ -153,7 +176,7 @@ const Dashboard = () => {
                 <div className="bg-white rounded-xl shadow-md overflow-hidden">
                     <div className="border-b border-gray-200">
                         <nav className="flex -mb-px">
-                            {['overview', 'cart', 'wishlist', 'activity', 'addresses'].map((tab) => (
+                            {['overview', 'cart', 'wishlist', 'activity', 'shipping', 'billing'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -166,7 +189,8 @@ const Dashboard = () => {
                                     {tab === 'cart' && <ShoppingCart className="h-5 w-5 mr-2" />}
                                     {tab === 'wishlist' && <Heart className="h-5 w-5 mr-2" />}
                                     {tab === 'activity' && <Package className="h-5 w-5 mr-2" />}
-                                    {tab === 'addresses' && <MapPin className="h-5 w-5 mr-2" />}
+                                    {tab === 'shipping' && <MapPin className="h-5 w-5 mr-2" />}
+                                    {tab === 'billing' && <CreditCard className="h-5 w-5 mr-2" />}
                                     {tab}
                                 </button>
                             ))}
@@ -420,10 +444,17 @@ const Dashboard = () => {
                             </div>
                         )}
 
-                        {activeTab === 'addresses' && (
+                        {activeTab === 'shipping' && (
                             <div>
                                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Shipping Addresses</h3>
                                 <ShippingAddresses />
+                            </div>
+                        )}
+
+                        {activeTab === 'billing' && (
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-800 mb-4">Billing Addresses</h3>
+                                <BillingAddresses />
                             </div>
                         )}
                     </div>

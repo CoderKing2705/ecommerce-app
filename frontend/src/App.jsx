@@ -30,6 +30,7 @@ import Checkout from './components/Checkout';
 import CheckoutSuccess from './pages/CheckoutSuccess';
 import ShippingAddresses from './components/ShippingAddresses';
 import AccountSettings from './pages/AccountSettings';
+import BillingAddresses from './pages/BillingAddresses';
 
 function App() {
   return (
@@ -204,6 +205,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <AccountSettings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/billing-addresses"
+                  element={
+                    <ProtectedRoute>
+                      <BillingAddresses />
                     </ProtectedRoute>
                   }
                 />

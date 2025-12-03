@@ -203,11 +203,20 @@ export const categoriesAPI = {
 export const checkoutAPI = {
     createSession: (data) => api.post('/checkout/create-session', data),
     getCheckoutSummary: () => api.get('/checkout/summary'),
+
+    // Shipping Addresses API
     getShippingAddresses: () => api.get('/checkout/shipping-addresses'),
     createShippingAddress: (data) => api.post('/checkout/shipping-addresses', data),
     updateShippingAddress: (id, data) => api.put(`/checkout/shipping-addresses/${id}`, data),
     deleteShippingAddress: (id) => api.delete(`/checkout/shipping-addresses/${id}`),
     getOrderDetails: (orderId) => api.get(`/checkout/order/${orderId}`),
+
+    // Billing Addresses API
+    getBillingAddresses: () => api.get('/billing-addresses'),
+    createBillingAddress: (data) => api.post('/billing-addresses', data),
+    updateBillingAddress: (id, data) => api.put(`/billing-addresses/${id}`, data),
+    deleteBillingAddress: (id) => api.delete(`/billing-addresses/${id}`),
+    setDefaultBillingAddress: (id) => api.put(`/billing-addresses/${id}/default`),
 };
 
 export default api;
