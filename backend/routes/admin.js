@@ -376,9 +376,33 @@ router.get('/orders/:id/details', adminAuth, async (req, res) => {
             SELECT 
                 o.*,
                 u.name as customer_name,
-                u.email as customer_email
+                u.email as customer_email,
+                -- Shipping address
+                sa.first_name as shipping_first_name,
+                sa.last_name as shipping_last_name,
+                sa.address_line1 as shipping_address_line1,
+                sa.address_line2 as shipping_address_line2,
+                sa.city as shipping_city,
+                sa.state as shipping_state,
+                sa.zip_code as shipping_zip_code,
+                sa.country as shipping_country,
+                sa.phone as shipping_phone,
+                sa.email as shipping_email,
+                -- Billing address (if exists)
+                ba.first_name as billing_first_name,
+                ba.last_name as billing_last_name,
+                ba.address_line1 as billing_address_line1,
+                ba.address_line2 as billing_address_line2,
+                ba.city as billing_city,
+                ba.state as billing_state,
+                ba.zip_code as billing_zip_code,
+                ba.country as billing_country,
+                ba.phone as billing_phone,
+                ba.email as billing_email
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
+            LEFT JOIN shipping_addresses sa ON o.shipping_address_id = sa.id
+            LEFT JOIN billing_addresses ba ON o.billing_address_id = ba.id
             WHERE o.id = $1
         `, [id]);
 
