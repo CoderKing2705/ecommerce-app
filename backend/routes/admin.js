@@ -366,6 +366,7 @@ router.put('/orders/:id/status', adminAuth, async (req, res) => {
 
 // Get complete order details
 // Get complete order details - FIXED VERSION
+// Get complete order details - UPDATED VERSION
 router.get('/orders/:id/details', adminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -409,7 +410,36 @@ router.get('/orders/:id/details', adminAuth, async (req, res) => {
             ORDER BY osh.created_at DESC
         `, [id]);
 
-        // Get order notes - FIXED: changed alias from 'on' to 'ord_notes'
+        // Get tracking history
+        const trackingHistoryResult = await pool.query(`
+            SELECT 
+                id,
+                status,
+                location,
+                description,
+                event_time,
+                TO_CHAR(event_time, 'MM/DD/YYYY HH12:MI AM') as formatted_time
+            FROM order_tracking_history 
+            WHERE order_id = $1 
+            ORDER BY event_time ASC
+        `, [id]);
+
+        // Get delivery attempts
+        const deliveryAttemptsResult = await pool.query(`
+            SELECT 
+                id,
+                attempt_number,
+                attempted_at,
+                status,
+                notes,
+                delivery_person_contact,
+                TO_CHAR(attempted_at, 'MM/DD/YYYY HH12:MI AM') as formatted_time
+            FROM delivery_attempts 
+            WHERE order_id = $1 
+            ORDER BY attempted_at DESC
+        `, [id]);
+
+        // Get order notes
         const notesResult = await pool.query(`
             SELECT 
                 ord_notes.*,
@@ -431,6 +461,8 @@ router.get('/orders/:id/details', adminAuth, async (req, res) => {
                 ...order,
                 items: itemsResult.rows,
                 status_history: statusHistoryResult.rows,
+                tracking_history: trackingHistoryResult.rows,
+                delivery_attempts: deliveryAttemptsResult.rows,
                 notes: notesResult.rows,
                 shipping: shippingResult.rows[0] || null
             }

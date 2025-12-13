@@ -427,3 +427,115 @@ export const handleCarrierWebhook = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+// Add delivery attempt (for admin)
+export const addDeliveryAttempt = async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const { orderId } = req.params;
+        const { attempt_number, status, notes, delivery_person_contact } = req.body;
+
+        // Verify admin
+        if (req.user.role !== 'ADMIN') {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        // Check if order exists
+        const orderCheck = await client.query(
+            'SELECT id, status FROM orders WHERE id = $1',
+            [orderId]
+        );
+
+        if (orderCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Calculate next attempt number if not provided
+        let attemptNumber = attempt_number;
+        if (!attemptNumber) {
+            const existingAttempts = await client.query(
+                'SELECT MAX(attempt_number) as max_attempt FROM delivery_attempts WHERE order_id = $1',
+                [orderId]
+            );
+            attemptNumber = (existingAttempts.rows[0].max_attempt || 0) + 1;
+        }
+
+        // Add delivery attempt
+        const deliveryAttempt = await client.query(
+            `INSERT INTO delivery_attempts 
+             (order_id, attempt_number, status, notes, delivery_person_contact)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING *`,
+            [orderId, attemptNumber, status, notes || null, delivery_person_contact || null]
+        );
+
+        // If delivery attempt is successful, update order status to delivered
+        if (status === 'successful') {
+            await client.query(
+                `UPDATE orders 
+                 SET status = 'delivered', 
+                     actual_delivery = CURRENT_TIMESTAMP,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $1`,
+                [orderId]
+            );
+
+            // Add tracking event for successful delivery
+            await client.query(
+                `INSERT INTO order_tracking_history 
+                 (order_id, status, description)
+                 VALUES ($1, 'delivered', 'Successfully delivered on delivery attempt #' || $2)`,
+                [orderId, attemptNumber]
+            );
+        }
+        // If delivery failed, update order status to delivery_failed
+        else if (status === 'failed') {
+            await client.query(
+                `UPDATE orders 
+                 SET status = 'delivery_failed', 
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $1`,
+                [orderId]
+            );
+
+            // Add tracking event for failed delivery attempt
+            await client.query(
+                `INSERT INTO order_tracking_history 
+                 (order_id, status, description)
+                 VALUES ($1, 'delivery_failed', 'Delivery attempt #' || $2 || ' failed: ' || $3)`,
+                [orderId, attemptNumber, notes || 'No reason provided']
+            );
+        }
+        // If attempted (but not successful), add tracking event
+        else if (status === 'attempted') {
+            await client.query(
+                `INSERT INTO order_tracking_history 
+                 (order_id, status, description)
+                 VALUES ($1, 'delivery_failed', 'Delivery attempt #' || $2 || ' made but recipient not available')`,
+                [orderId, attemptNumber]
+            );
+        }
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            delivery_attempt: deliveryAttempt.rows[0]
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error adding delivery attempt:', error);
+        res.status(500).json({
+            message: 'Server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    } finally {
+        client.release();
+    }
+};

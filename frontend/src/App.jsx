@@ -31,6 +31,7 @@ import CheckoutSuccess from './pages/CheckoutSuccess';
 import ShippingAddresses from './components/ShippingAddresses';
 import AccountSettings from './pages/AccountSettings';
 import BillingAddresses from './pages/BillingAddresses';
+import OrderTracking from './pages/OrderTracking';
 
 function App() {
   return (
@@ -130,6 +131,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <OrderDetailsUser />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders/:id/tracking"
+                  element={
+                    <ProtectedRoute>
+                      <OrderTracking />
                     </ProtectedRoute>
                   }
                 />

@@ -148,7 +148,10 @@ export const adminAPI = {
     bulkUpdateOrders: (data) => api.post('/order-ops/bulk', data),
     getDailyOrders: (params) => api.get('/analytics/orders/daily', { params }),
     getStatusDistribution: () => api.get('/analytics/orders/status-distribution'),
-    getRevenueStats: (params) => api.get('/analytics/orders/revenue', { params })
+    getRevenueStats: (params) => api.get('/analytics/orders/revenue', { params }),
+    updateOrderTracking: (id, data) => api.put(`/admin/orders/${id}/tracking-info`, data),
+    addTrackingEvent: (id, data) => api.post(`/admin/orders/${id}/tracking-event`, data),
+    addDeliveryAttempt: (id, data) => api.post(`/admin/orders/${id}/delivery-attempts`, data)
 };
 
 

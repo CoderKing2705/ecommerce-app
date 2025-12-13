@@ -80,6 +80,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/billing-addresses', billingAddressRoutes);
 app.use('/api/order-tracking', orderTrackingRoutes);
+app.use('/api/admin/orders', orderTrackingRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

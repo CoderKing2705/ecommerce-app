@@ -152,7 +152,7 @@ router.get('/:id/details', adminAuth, async (req, res) => {
         `, [id]);
 
         // Get tracking history
-        const trackingHistoryResult = await client.query(`
+        const trackingHistoryResult = await pool.query(`
             SELECT 
                 id,
                 status,
@@ -166,7 +166,7 @@ router.get('/:id/details', adminAuth, async (req, res) => {
         `, [id]);
 
         // Get delivery attempts
-        const deliveryAttemptsResult = await client.query(`
+        const deliveryAttemptsResult = await pool.query(`
             SELECT 
                 id,
                 attempt_number,

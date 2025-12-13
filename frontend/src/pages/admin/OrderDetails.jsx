@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-    ArrowLeft, Package, User, MapPin, CreditCard, Truck, Clock,
-    MessageSquare, Edit, Printer, Mail, CheckCircle, AlertCircle,
-    Calendar, Map, RefreshCw, ExternalLink, Phone, Home, 
-    Loader2, Shield, Download, Copy, Eye, EyeOff
+    ArrowLeft, Package, User, MapPin, CreditCard, Truck,
+    Printer, Mail, CheckCircle, AlertCircle,
+    Calendar, Map, RefreshCw, ExternalLink, Home,
+    Copy
 } from 'lucide-react';
 import { adminAPI, handleAPIError } from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import toast from 'react-hot-toast';
+
 
 const OrderDetails = () => {
     const { id } = useParams();
@@ -22,13 +23,13 @@ const OrderDetails = () => {
     const [statusNote, setStatusNote] = useState('');
     const [newNote, setNewNote] = useState('');
     const [isNoteInternal, setIsNoteInternal] = useState(true);
-    
+
     // Tracking states
     const [showTrackingModal, setShowTrackingModal] = useState(false);
     const [showTrackingEventModal, setShowTrackingEventModal] = useState(false);
     const [showDeliveryAttemptModal, setShowDeliveryAttemptModal] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
-    
+
     // Tracking form states
     const [trackingForm, setTrackingForm] = useState({
         tracking_number: '',
@@ -37,13 +38,13 @@ const OrderDetails = () => {
         delivery_notes: '',
         status: ''
     });
-    
+
     const [trackingEventForm, setTrackingEventForm] = useState({
         status: '',
         location: '',
         description: ''
     });
-    
+
     const [deliveryAttemptForm, setDeliveryAttemptForm] = useState({
         attempt_number: 1,
         status: 'attempted',
@@ -51,6 +52,18 @@ const OrderDetails = () => {
         delivery_person_contact: ''
     });
 
+
+
+    const calculateSubtotal = () => {
+        if (!order?.items || order.items.length === 0) return 0;
+        return order.items.reduce((sum, item) => {
+            return sum + parseFloat(item.total_price || 0);
+        }, 0);
+    };
+
+    const formatCurrency = (amount) => {
+        return `$${parseFloat(amount || 0).toFixed(2)}`;
+    };
     useEffect(() => {
         fetchOrderDetails();
     }, [id]);
@@ -59,20 +72,29 @@ const OrderDetails = () => {
         try {
             if (!silent) setLoading(true);
             else setRefreshing(true);
-            
+
             const response = await adminAPI.getOrderDetails(id);
-            setOrder(response.data.order);
-            setNewStatus(response.data.order?.status || '');
-            
+            const orderData = response.data.order;
+            console.log('Order response:', response.data.order); // Add this line
+            console.log('Order timeline:', response.data.order?.timeline); // Add this line
+
+            // Ensure items is always an array
+            if (orderData) {
+                orderData.items = orderData.items || [];
+            }
+
+            setOrder(orderData);
+            setNewStatus(orderData?.status || '');
+
             // Initialize tracking form with existing data
-            if (response.data.order) {
+            if (orderData) {
                 setTrackingForm({
-                    tracking_number: response.data.order.tracking_number || '',
-                    carrier: response.data.order.carrier || '',
-                    estimated_delivery: response.data.order.estimated_delivery ? 
-                        response.data.order.estimated_delivery.split('T')[0] : '',
-                    delivery_notes: response.data.order.delivery_notes || '',
-                    status: response.data.order.status || ''
+                    tracking_number: orderData.tracking_number || '',
+                    carrier: orderData.carrier || '',
+                    estimated_delivery: orderData.estimated_delivery ?
+                        orderData.estimated_delivery.split('T')[0] : '',
+                    delivery_notes: orderData.delivery_notes || '',
+                    status: orderData.status || ''
                 });
             }
         } catch (error) {
@@ -189,18 +211,6 @@ const OrderDetails = () => {
         }
     };
 
-    const getStatusIcon = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'confirmed': return <CheckCircle className="h-6 w-6 text-green-500" />;
-            case 'processing': return <Package className="h-6 w-6 text-blue-500" />;
-            case 'shipped': return <Truck className="h-6 w-6 text-yellow-500" />;
-            case 'out_for_delivery': return <Truck className="h-6 w-6 text-orange-500" />;
-            case 'delivered': return <Home className="h-6 w-6 text-green-600" />;
-            case 'cancelled': return <AlertCircle className="h-6 w-6 text-red-500" />;
-            default: return <Package className="h-6 w-6 text-gray-500" />;
-        }
-    };
-
     const getStatusColor = (status) => {
         const colors = {
             pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -215,6 +225,8 @@ const OrderDetails = () => {
         };
         return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
     };
+
+
 
     const getPaymentStatusColor = (status) => {
         const colors = {
@@ -250,9 +262,10 @@ const OrderDetails = () => {
     };
 
     const calculateProgress = () => {
-        if (!order?.timeline) return 0;
-        const completed = order.timeline.filter(step => step.completed).length;
-        return Math.round((completed / order.timeline.length) * 100);
+        const timeline = calculateTimeline();
+        if (timeline.length === 0) return 0;
+        const completed = timeline.filter(step => step.completed).length;
+        return Math.round((completed / timeline.length) * 100);
     };
 
     const getCarrierLogo = (carrier) => {
@@ -288,6 +301,97 @@ const OrderDetails = () => {
             </div>
         );
     }
+
+
+    // Add this function in your OrderDetails component, before the return statement
+    const calculateTimeline = () => {
+        if (!order) return [];
+
+        const timeline = [];
+        const today = new Date();
+        const orderDate = new Date(order.created_at);
+
+        // Order placed
+        timeline.push({
+            id: 1,
+            title: 'Order Placed',
+            description: 'Your order has been received',
+            date: order.created_at,
+            completed: true,
+            active: false,
+            icon: '📦'
+        });
+
+        // Order confirmed
+        const confirmedEvent = order.tracking_history?.find(h => h.status === 'confirmed');
+        timeline.push({
+            id: 2,
+            title: 'Order Confirmed',
+            description: 'Payment confirmed and order processing',
+            date: confirmedEvent ? confirmedEvent.event_time :
+                new Date(orderDate.getTime() + 30 * 60000),
+            completed: !!confirmedEvent || order.status !== 'pending',
+            active: !confirmedEvent && order.status !== 'pending',
+            icon: '✅'
+        });
+
+        // Processing
+        const processingEvent = order.tracking_history?.find(h => h.status === 'processing');
+        timeline.push({
+            id: 3,
+            title: 'Processing',
+            description: 'Preparing your items for shipment',
+            date: processingEvent ? processingEvent.event_time :
+                new Date(orderDate.getTime() + 24 * 60 * 60000),
+            completed: !!processingEvent || ['shipped', 'out_for_delivery', 'delivered'].includes(order.status),
+            active: !processingEvent && ['shipped', 'out_for_delivery', 'delivered', 'processing'].includes(order.status),
+            icon: '⚙️'
+        });
+
+        // Shipped
+        const shippedEvent = order.tracking_history?.find(h => h.status === 'shipped');
+        timeline.push({
+            id: 4,
+            title: 'Shipped',
+            description: order.tracking_number ?
+                `Shipped via ${order.carrier || 'carrier'} (${order.tracking_number})` :
+                'Package is on its way',
+            date: shippedEvent ? shippedEvent.event_time :
+                order.tracking_number ? new Date(orderDate.getTime() + 48 * 60 * 60000) : null,
+            completed: !!shippedEvent || !!order.tracking_number || ['out_for_delivery', 'delivered'].includes(order.status),
+            active: !shippedEvent && !!order.tracking_number,
+            icon: '🚚'
+        });
+
+        // Out for delivery
+        const outForDeliveryEvent = order.tracking_history?.find(h => h.status === 'out_for_delivery');
+        timeline.push({
+            id: 5,
+            title: 'Out for Delivery',
+            description: 'Package is with delivery carrier',
+            date: outForDeliveryEvent ? outForDeliveryEvent.event_time : null,
+            completed: !!outForDeliveryEvent || order.status === 'delivered',
+            active: !!shippedEvent && !outForDeliveryEvent && order.status !== 'delivered',
+            icon: '📦'
+        });
+
+        // Delivered
+        const deliveredEvent = order.tracking_history?.find(h => h.status === 'delivered');
+        timeline.push({
+            id: 6,
+            title: 'Delivered',
+            description: order.actual_delivery ?
+                `Delivered on ${new Date(order.actual_delivery).toLocaleDateString()}` :
+                'Awaiting delivery',
+            date: order.actual_delivery || order.estimated_delivery,
+            completed: !!deliveredEvent || !!order.actual_delivery || order.status === 'delivered',
+            active: !!outForDeliveryEvent && !deliveredEvent && order.status !== 'delivered',
+            icon: '🏠'
+        });
+
+        return timeline;
+    };
+
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
@@ -380,8 +484,8 @@ const OrderDetails = () => {
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`flex-1 py-4 px-6 text-center font-medium capitalize ${activeTab === tab
-                                            ? 'text-blue-600 border-b-2 border-blue-600'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        ? 'text-blue-600 border-b-2 border-blue-600'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
                                     {tab === 'overview' && 'Overview'}
@@ -632,65 +736,68 @@ const OrderDetails = () => {
                                 {/* Tracking Timeline */}
                                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                                     <h3 className="font-semibold text-gray-800 mb-6">Delivery Timeline</h3>
-                                    {order.timeline && order.timeline.length > 0 ? (
-                                        <div className="relative">
-                                            {order.timeline.map((step, index) => (
-                                                <div key={step.id} className="flex mb-8 last:mb-0">
-                                                    {/* Vertical Line */}
-                                                    <div className="flex flex-col items-center mr-4">
-                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step.completed
+                                    {(() => {
+                                        const timeline = calculateTimeline();
+                                        return timeline.length > 0 ? (
+                                            <div className="relative">
+                                                {timeline.map((step, index) => (
+                                                    <div key={step.id} className="flex mb-8 last:mb-0">
+                                                        {/* Vertical Line */}
+                                                        <div className="flex flex-col items-center mr-4">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step.completed
                                                                 ? 'bg-green-100 text-green-600'
                                                                 : step.active
                                                                     ? 'bg-blue-100 text-blue-600 border-2 border-blue-500'
                                                                     : 'bg-gray-100 text-gray-400'
-                                                            }`}>
-                                                            <span className="text-lg">{step.icon}</span>
-                                                        </div>
-                                                        {index < order.timeline.length - 1 && (
-                                                            <div className={`flex-1 w-0.5 mt-2 ${step.completed ? 'bg-green-300' : 'bg-gray-200'}`} />
-                                                        )}
-                                                    </div>
-
-                                                    {/* Content */}
-                                                    <div className="flex-1 pb-8">
-                                                        <div className="flex justify-between items-start">
-                                                            <div>
-                                                                <h4 className="font-semibold text-gray-800">{step.title}</h4>
-                                                                <p className="text-gray-600 text-sm mt-1">{step.description}</p>
-                                                                {step.date && (
-                                                                    <p className="text-xs text-gray-500 mt-2">
-                                                                        {formatDateTime(step.date)}
-                                                                    </p>
-                                                                )}
+                                                                }`}>
+                                                                <span className="text-lg">{step.icon}</span>
                                                             </div>
-                                                            {step.completed && (
-                                                                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                                                    Completed
-                                                                </span>
+                                                            {index < timeline.length - 1 && (
+                                                                <div className={`flex-1 w-0.5 mt-2 ${step.completed ? 'bg-green-300' : 'bg-gray-200'}`} />
                                                             )}
                                                         </div>
+
+                                                        {/* Content */}
+                                                        <div className="flex-1 pb-8">
+                                                            <div className="flex justify-between items-start">
+                                                                <div>
+                                                                    <h4 className="font-semibold text-gray-800">{step.title}</h4>
+                                                                    <p className="text-gray-600 text-sm mt-1">{step.description}</p>
+                                                                    {step.date && (
+                                                                        <p className="text-xs text-gray-500 mt-2">
+                                                                            {formatDateTime(step.date)}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                {step.completed && (
+                                                                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                                                        Completed
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-gray-500 text-center py-8">No timeline available</p>
-                                    )}
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-500 text-center py-8">No timeline available</p>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Tracking History */}
                                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                                    <h3 className="font-semibold text-gray-800 mb-4">Tracking Updates</h3>
-                                    {order.tracking_history && order.tracking_history.length > 0 ? (
+                                    <h3 className="font-semibold text-gray-800 mb-4">Status Updates</h3>
+                                    {order.status_history && order.status_history.length > 0 ? (
                                         <div className="space-y-4">
-                                            {order.tracking_history.map((update) => (
+                                            {order.status_history.map((update) => (
                                                 <div key={update.id} className="border-l-2 border-blue-500 pl-4 pb-4">
                                                     <div className="flex justify-between">
                                                         <div>
                                                             <p className="font-medium text-gray-800 capitalize">
                                                                 {update.status.replace('_', ' ')}
                                                             </p>
-                                                            <p className="text-gray-600 text-sm mt-1">{update.description}</p>
+                                                            <p className="text-gray-600 text-sm mt-1">{update.note}</p>
                                                             {update.location && (
                                                                 <p className="text-gray-500 text-sm mt-1 flex items-center">
                                                                     <Map className="h-3 w-3 mr-1" />
@@ -699,15 +806,18 @@ const OrderDetails = () => {
                                                             )}
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-sm text-gray-500">{formatDate(update.event_time)}</p>
-                                                            <p className="text-xs text-gray-400">{formatDateTime(update.event_time)}</p>
+                                                            <p className="text-sm text-gray-500">{formatDate(update.created_at)}</p>
+                                                            <p className="text-xs text-gray-400">{formatDateTime(update.created_at)}</p>
+                                                            {update.updated_by_name && (
+                                                                <p className="text-xs text-gray-500">By: {update.updated_by_name}</p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-gray-500 text-center py-8">No tracking updates yet</p>
+                                        <p className="text-gray-500 text-center py-8">No status updates yet</p>
                                     )}
                                 </div>
 
@@ -765,13 +875,15 @@ const OrderDetails = () => {
                                                     <div>
                                                         <h4 className="font-medium text-gray-800">{item.product_name}</h4>
                                                         <p className="text-sm text-gray-600">SKU: {item.sku || 'N/A'}</p>
-                                                        <p className="text-sm text-gray-600">Price: ${item.product_price}</p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Price: {formatCurrency(item.product_price)}
+                                                        </p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-lg font-semibold">${item.total_price}</p>
-                                                    <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                                                    <p className="text-sm text-gray-600">Stock: {item.stock_quantity}</p>
+                                                    <p className="text-lg font-semibold">{formatCurrency(item.total_price)}</p>
+                                                    <p className="text-sm text-gray-600">Qty: {item.quantity || 0}</p>
+                                                    <p className="text-sm text-gray-600">Stock: {item.stock_quantity || 0}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -782,19 +894,19 @@ const OrderDetails = () => {
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
                                                 <span className="text-gray-600">Subtotal</span>
-                                                <span className="font-medium">${order.items?.reduce((sum, item) => sum + (item.total_price || 0), 0).toFixed(2)}</span>
+                                                <span className="font-medium">{formatCurrency(calculateSubtotal())}</span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-gray-600">Shipping</span>
-                                                <span className="font-medium">${order.shipping_fee || 0}</span>
+                                                <span className="font-medium">{formatCurrency(order.shipping_fee)}</span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-gray-600">Tax</span>
-                                                <span className="font-medium">${order.tax_amount || 0}</span>
+                                                <span className="font-medium">{formatCurrency(order.tax_amount)}</span>
                                             </div>
                                             <div className="flex justify-between text-lg font-semibold pt-2 border-t">
                                                 <span>Total</span>
-                                                <span>${order.total_amount}</span>
+                                                <span>{formatCurrency(order.total_amount)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -910,7 +1022,7 @@ const OrderDetails = () => {
                                 <input
                                     type="text"
                                     value={trackingForm.tracking_number}
-                                    onChange={(e) => setTrackingForm({...trackingForm, tracking_number: e.target.value})}
+                                    onChange={(e) => setTrackingForm({ ...trackingForm, tracking_number: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                     placeholder="Enter tracking number"
                                 />
@@ -921,7 +1033,7 @@ const OrderDetails = () => {
                                 </label>
                                 <select
                                     value={trackingForm.carrier}
-                                    onChange={(e) => setTrackingForm({...trackingForm, carrier: e.target.value})}
+                                    onChange={(e) => setTrackingForm({ ...trackingForm, carrier: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 >
                                     <option value="">Select Carrier</option>
@@ -940,7 +1052,7 @@ const OrderDetails = () => {
                                 <input
                                     type="date"
                                     value={trackingForm.estimated_delivery}
-                                    onChange={(e) => setTrackingForm({...trackingForm, estimated_delivery: e.target.value})}
+                                    onChange={(e) => setTrackingForm({ ...trackingForm, estimated_delivery: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 />
                             </div>
@@ -950,7 +1062,7 @@ const OrderDetails = () => {
                                 </label>
                                 <textarea
                                     value={trackingForm.delivery_notes}
-                                    onChange={(e) => setTrackingForm({...trackingForm, delivery_notes: e.target.value})}
+                                    onChange={(e) => setTrackingForm({ ...trackingForm, delivery_notes: e.target.value })}
                                     rows="3"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                     placeholder="Add delivery notes..."
@@ -988,7 +1100,7 @@ const OrderDetails = () => {
                                 </label>
                                 <select
                                     value={trackingEventForm.status}
-                                    onChange={(e) => setTrackingEventForm({...trackingEventForm, status: e.target.value})}
+                                    onChange={(e) => setTrackingEventForm({ ...trackingEventForm, status: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 >
                                     <option value="">Select Status</option>
@@ -1007,7 +1119,7 @@ const OrderDetails = () => {
                                 <input
                                     type="text"
                                     value={trackingEventForm.location}
-                                    onChange={(e) => setTrackingEventForm({...trackingEventForm, location: e.target.value})}
+                                    onChange={(e) => setTrackingEventForm({ ...trackingEventForm, location: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                     placeholder="City, State"
                                 />
@@ -1018,7 +1130,7 @@ const OrderDetails = () => {
                                 </label>
                                 <textarea
                                     value={trackingEventForm.description}
-                                    onChange={(e) => setTrackingEventForm({...trackingEventForm, description: e.target.value})}
+                                    onChange={(e) => setTrackingEventForm({ ...trackingEventForm, description: e.target.value })}
                                     rows="3"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                     placeholder="Describe the tracking event..."
@@ -1057,7 +1169,7 @@ const OrderDetails = () => {
                                 <input
                                     type="number"
                                     value={deliveryAttemptForm.attempt_number}
-                                    onChange={(e) => setDeliveryAttemptForm({...deliveryAttemptForm, attempt_number: parseInt(e.target.value)})}
+                                    onChange={(e) => setDeliveryAttemptForm({ ...deliveryAttemptForm, attempt_number: parseInt(e.target.value) })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                     min="1"
                                 />
@@ -1068,7 +1180,7 @@ const OrderDetails = () => {
                                 </label>
                                 <select
                                     value={deliveryAttemptForm.status}
-                                    onChange={(e) => setDeliveryAttemptForm({...deliveryAttemptForm, status: e.target.value})}
+                                    onChange={(e) => setDeliveryAttemptForm({ ...deliveryAttemptForm, status: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 >
                                     <option value="attempted">Attempted</option>
@@ -1082,7 +1194,7 @@ const OrderDetails = () => {
                                 </label>
                                 <textarea
                                     value={deliveryAttemptForm.notes}
-                                    onChange={(e) => setDeliveryAttemptForm({...deliveryAttemptForm, notes: e.target.value})}
+                                    onChange={(e) => setDeliveryAttemptForm({ ...deliveryAttemptForm, notes: e.target.value })}
                                     rows="3"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                     placeholder="Add notes about the delivery attempt..."
@@ -1095,7 +1207,7 @@ const OrderDetails = () => {
                                 <input
                                     type="text"
                                     value={deliveryAttemptForm.delivery_person_contact}
-                                    onChange={(e) => setDeliveryAttemptForm({...deliveryAttemptForm, delivery_person_contact: e.target.value})}
+                                    onChange={(e) => setDeliveryAttemptForm({ ...deliveryAttemptForm, delivery_person_contact: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                     placeholder="Phone number or name"
                                 />
