@@ -106,13 +106,26 @@ router.get('/stats', adminAuth, async (req, res) => {
 
             // Get user signups for last 30 days
             const userSignupsResult = await pool.query(`
-                SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM users 
-                WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
-                GROUP BY DATE(created_at)
-                ORDER BY date
-            `);
-            stats.userSignups = userSignupsResult.rows || [];
+            WITH date_series AS (
+                SELECT generate_series(
+                    CURRENT_DATE - INTERVAL '29 days',
+                    CURRENT_DATE,
+                    '1 day'::interval
+                )::date AS date
+            )
+            SELECT 
+                ds.date,
+                COUNT(u.id) as count
+            FROM date_series ds
+            LEFT JOIN users u ON ds.date = DATE(u.created_at)
+            GROUP BY ds.date
+            ORDER BY ds.date
+        `);
+
+            stats.userSignups = userSignupsResult.rows.map(row => ({
+                date: row.date,
+                count: parseInt(row.count)
+            }));
 
             // Get recent users with status
             const recentUsersResult = await pool.query(`

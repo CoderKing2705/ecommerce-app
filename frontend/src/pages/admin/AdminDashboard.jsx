@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
     Users,
@@ -7,19 +7,39 @@ import {
     TrendingUp,
     Package,
     UserPlus,
-    Activity
+    Activity,
+    Calendar
 } from 'lucide-react';
 import { adminAPI, handleAPIError } from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import {
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    BarChart,
+    Bar
+} from 'recharts';
+
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [chartType, setChartType] = useState('area');
+    const [showChart, setShowChart] = useState(false);
 
     useEffect(() => {
         fetchStats();
+        const timer = setTimeout(() => {
+            setShowChart(true);
+        }, 100);
+        return () => clearTimeout(timer);
     }, []);
 
     const fetchStats = async () => {
@@ -56,6 +76,62 @@ const AdminDashboard = () => {
             setLoading(false);
         }
     };
+
+
+    const chartData = useMemo(() => {
+        if (!stats?.userSignups || stats.userSignups.length === 0) {
+            // Generate empty data for the last 30 days if no data exists
+            const today = new Date();
+            const emptyData = [];
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const formattedDate = date.toISOString().split('T')[0];
+                emptyData.push({
+                    date: formattedDate,
+                    displayDate: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    signups: 0
+                });
+            }
+            return emptyData;
+        }
+
+        // If we have data from backend, format it properly
+        return stats.userSignups.map(day => ({
+            date: day.date,
+            displayDate: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            signups: parseInt(day.count || 0)
+        }));
+    }, [stats]);
+
+    const totalSignups = useMemo(() => {
+        if (!stats?.userSignups) return 0;
+        return stats.userSignups.reduce((total, day) => total + parseInt(day.count || 0), 0);
+    }, [stats]);
+
+    // Custom tooltip component for the chart
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                    <p className="text-sm font-medium text-gray-900">
+                        {new Date(label).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                    <p className="text-sm text-blue-600">
+                        Signups: <span className="font-bold">{payload[0].value}</span>
+                    </p>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // Custom tick formatter for XAxis
+    const formatXAxis = (tickItem) => {
+        const date = new Date(tickItem);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
 
     if (loading) {
         return <LoadingSpinner text="Loading admin dashboard..." />;
@@ -162,30 +238,147 @@ const AdminDashboard = () => {
                 {/* Charts Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     {/* User Signups Chart */}
+                    {/* User Signups Chart */}
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 }}
-                        className="bg-white p-6 rounded-xl shadow-md border border-gray-200"
+                        className="bg-white p-6 rounded-xl shadow-md border border-gray-200 min-w-0 overflow-hidden"
                     >
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                            <Activity className="h-5 w-5 mr-2 text-blue-600" />
-                            User Signups (Last 30 Days)
-                        </h3>
-                        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                            {(stats.userSignups || []).length > 0 ? (
-                                <div className="text-center">
-                                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-gray-500">Chart visualization would be here</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                                    <Activity className="h-5 w-5 mr-2 text-blue-600" />
+                                    User Signups (Last 30 Days)
+                                </h3>
+                                <div className="flex items-center mt-1 text-sm text-gray-600">
+                                    <Calendar className="h-4 w-4 mr-1" />
+                                    <span>{totalSignups} total signups</span>
+                                </div>
+                            </div>
+                            <div className="flex space-x-2 mt-3 sm:mt-0">
+                                <button
+                                    onClick={() => setChartType('area')}
+                                    className={`px-3 py-1 text-sm rounded-md transition-colors ${chartType === 'area'
+                                        ? 'bg-blue-100 text-blue-600 border border-blue-200'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    Area
+                                </button>
+                                <button
+                                    onClick={() => setChartType('bar')}
+                                    className={`px-3 py-1 text-sm rounded-md transition-colors ${chartType === 'bar'
+                                        ? 'bg-blue-100 text-blue-600 border border-blue-200'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    Bar
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Chart Container with explicit dimensions */}
+                        <div className="h-64 w-full min-w-0">
+                            {showChart && chartData.length > 0 ? (
+                                <ResponsiveContainer
+                                    width="100%"
+                                    height="100%"
+                                    minHeight={256}  // 16rem = 256px
+                                    minWidth={0}     // Important for flex containers
+                                >
+                                    {chartType === 'area' ? (
+                                        <AreaChart
+                                            data={chartData}
+                                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                            <XAxis
+                                                dataKey="date"
+                                                tickFormatter={formatXAxis}
+                                                stroke="#666"
+                                                fontSize={12}
+                                                tickMargin={10}
+                                            />
+                                            <YAxis
+                                                stroke="#666"
+                                                fontSize={12}
+                                                allowDecimals={false}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="signups"
+                                                name="User Signups"
+                                                stroke="#3b82f6"
+                                                fill="#3b82f6"
+                                                fillOpacity={0.2}
+                                                strokeWidth={2}
+                                                activeDot={{ r: 6, fill: '#3b82f6' }}
+                                            />
+                                        </AreaChart>
+                                    ) : (
+                                        <BarChart
+                                            data={chartData}
+                                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                            <XAxis
+                                                dataKey="date"
+                                                tickFormatter={formatXAxis}
+                                                stroke="#666"
+                                                fontSize={12}
+                                                tickMargin={10}
+                                            />
+                                            <YAxis
+                                                stroke="#666"
+                                                fontSize={12}
+                                                allowDecimals={false}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Bar
+                                                dataKey="signups"
+                                                name="User Signups"
+                                                fill="#3b82f6"
+                                                radius={[4, 4, 0, 0]}
+                                                maxBarSize={30}
+                                            />
+                                        </BarChart>
+                                    )}
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center bg-gray-50 rounded-lg">
+                                    <BarChart3 className="h-12 w-12 text-gray-400 mb-4" />
+                                    <p className="text-gray-500">No signup data available</p>
                                     <p className="text-sm text-gray-400 mt-1">
-                                        {(stats.userSignups || []).reduce((total, day) => total + parseInt(day.count || 0), 0)} signups in last 30 days
+                                        User signup data will appear here once available
                                     </p>
                                 </div>
-                            ) : (
-                                <div className="text-center text-gray-500">
-                                    No signup data available
-                                </div>
                             )}
+                        </div>
+
+                        {/* Summary stats below chart */}
+                        <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <div className="text-sm text-gray-600">Today</div>
+                                <div className="text-lg font-bold text-gray-800">
+                                    {stats.todayUsers || 0}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-sm text-gray-600">This Week</div>
+                                <div className="text-lg font-bold text-gray-800">
+                                    {stats.weekUsers || 0}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-sm text-gray-600">Total</div>
+                                <div className="text-lg font-bold text-gray-800">
+                                    {stats.totalUsers || 0}
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
 

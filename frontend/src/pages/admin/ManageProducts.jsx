@@ -21,11 +21,17 @@ const ManageProducts = () => {
 
     useEffect(() => {
         if (searchTerm) {
-            const filtered = products.filter(product =>
-                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.brand.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const searchTermLower = searchTerm.toLowerCase();
+            const filtered = products.filter(product => {
+                // Safely handle null/undefined values with optional chaining and nullish coalescing
+                const name = product.name?.toLowerCase() || '';
+                const category = product.category?.toLowerCase() || '';
+                const brand = product.brand?.toLowerCase() || '';
+
+                return name.includes(searchTermLower) ||
+                    category.includes(searchTermLower) ||
+                    brand.includes(searchTermLower);
+            });
             setFilteredProducts(filtered);
         } else {
             setFilteredProducts(products);
@@ -36,8 +42,18 @@ const ManageProducts = () => {
         try {
             setLoading(true);
             const response = await productsAPI.getAll();
-            setProducts(response.data);
-            setFilteredProducts(response.data);
+            // Ensure all products have required fields with default values
+            const safeProducts = (response.data || []).map(product => ({
+                ...product,
+                name: product.name || 'Unnamed Product',
+                category: product.category || 'Uncategorized',
+                brand: product.brand || 'Unknown Brand',
+                price: product.price || 0,
+                stock_quantity: product.stock_quantity || 0,
+                image_url: product.image_url || '/placeholder-image.jpg'
+            }));
+            setProducts(safeProducts);
+            setFilteredProducts(safeProducts);
         } catch (error) {
             console.error('Error fetching products:', error);
             setError(handleAPIError(error));
@@ -87,6 +103,24 @@ const ManageProducts = () => {
         return <LoadingSpinner text="Loading products..." />;
     }
 
+    // Add error state UI
+    if (error && products.length === 0) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-red-600 text-xl mb-4">Error loading products</div>
+                    <div className="text-gray-600 mb-4">{error}</div>
+                    <button
+                        onClick={fetchProducts}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,6 +156,14 @@ const ManageProducts = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -164,35 +206,39 @@ const ManageProducts = () => {
                                                 <img
                                                     className="h-10 w-10 rounded-lg object-cover"
                                                     src={product.image_url}
-                                                    alt={product.name}
+                                                    alt={product.name || 'Product image'}
+                                                    onError={(e) => {
+                                                        e.target.src = '/placeholder-image.jpg';
+                                                        e.target.onerror = null;
+                                                    }}
                                                 />
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {product.name}
+                                                        {product.name || 'Unnamed Product'}
                                                     </div>
                                                     <div className="text-sm text-gray-500">
-                                                        {product.brand}
+                                                        {product.brand || 'Unknown Brand'}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                {product.category}
+                                                {product.category || 'Uncategorized'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            ${product.price}
+                                            ${parseFloat(product.price || 0).toFixed(2)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {product.stock_quantity}
+                                            {product.stock_quantity || 0}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${product.stock_quantity > 0
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
+                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${(product.stock_quantity || 0) > 0
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-red-100 text-red-800'
                                                 }`}>
-                                                {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                                                {(product.stock_quantity || 0) > 0 ? 'In Stock' : 'Out of Stock'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -226,6 +272,14 @@ const ManageProducts = () => {
                             <p className="text-gray-400 mt-1">
                                 {searchTerm ? 'Try adjusting your search criteria' : 'Get started by adding your first product'}
                             </p>
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="mt-4 text-blue-600 hover:text-blue-800 underline"
+                                >
+                                    Clear search
+                                </button>
+                            )}
                         </div>
                     )}
                 </motion.div>

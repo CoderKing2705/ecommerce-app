@@ -1,1 +1,43 @@
 @import "tailwindcss";
+
+/* Custom styles for recharts */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+    stroke: #f3f4f6;
+}
+
+.recharts-text {
+    font-size: 12px;
+    fill: #6b7280;
+}
+
+.recharts-tooltip-wrapper {
+    outline: none;
+}
+
+.recharts-default-tooltip {
+    border-radius: 0.5rem !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.recharts-legend-item-text {
+    font-size: 14px;
+    color: #374151;
+}
+
+/* Fix for recharts in flex/grid containers */
+.min-w-0 {
+    min-width: 0;
+}
+
+/* Ensure charts have a minimum size */
+.recharts-wrapper {
+    min-width: 0 !important;
+}
+
+/* Fix for responsive container */
+.recharts-responsive-container {
+    width: 100% !important;
+    height: 100% !important;
+}
