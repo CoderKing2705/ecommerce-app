@@ -1,47 +1,10 @@
 import express from 'express';
-import passport from 'passport';
-import jwt from 'jsonwebtoken';
-import { body } from 'express-validator';
-import { register, login, getMe } from '../controllers/authController.js';
-import { auth } from '../middleware/auth.js';
-import upload from '../config/multer.js';
 import { pool } from '../config/database.js';
+import { auth } from "../middleware/auth.js";
+
 
 const router = express.Router();
 
-// Register
-router.post('/register', [
-    body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 }),
-    body('name').notEmpty().trim()
-], register);
-
-// Login
-router.post('/login', [
-    body('email').isEmail().normalizeEmail(),
-    body('password').exists()
-], login);
-
-// Get current user
-router.get('/me', auth, getMe);
-
-// Google OAuth
-router.get('/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-router.get('/google/callback',
-    passport.authenticate('google', { session: false }),
-    (req, res) => {
-        const token = jwt.sign(
-            { userId: req.user.id },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
-
-        res.redirect(`${process.env.CLIENT_URL}/auth/success?token=${token}`);
-    }
-);
 
 router.put('/profile', auth, async (req, res) => {
     try {
@@ -53,7 +16,6 @@ router.put('/profile', auth, async (req, res) => {
             state,
             country,
             postalCode,
-            profileImage,
             notifications
         } = req.body;
 
@@ -69,11 +31,20 @@ router.put('/profile', auth, async (req, res) => {
                 state = $5,
                 country = $6,
                 postal_code = $7,
-                profile_image = $8,
                 notifications = $9,
                 updated_at = NOW()
             WHERE id = $10
-            RETURNING id, name, email, role, profile_image, notifications
+            RETURNING
+                id,
+                email,
+                name,
+                role,
+                phone,
+                notifications,
+                status,
+                email_verified,
+                created_at,
+                updated_at;
             `,
             [
                 name,
@@ -83,8 +54,7 @@ router.put('/profile', auth, async (req, res) => {
                 state,
                 country,
                 postalCode,
-                profileImage,
-                JSON.stringify(notifications),
+                notifications,
                 userId
             ]
         );
@@ -135,25 +105,6 @@ router.put('/change-password', auth, async (req, res) => {
 });
 
 
-// Upload profile image
-router.post('/upload-profile-image', auth, upload.single('profileImage'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'No image provided' });
-        }
-
-        // Save image path to user
-        const imageUrl = `/uploads/profile/${req.file.filename}`;
-        await pool.query(
-            'UPDATE users SET profile_image = $1, updated_at = NOW() WHERE id = $2',
-            [imageUrl, req.user.id]
-        );
-
-        res.json({ imageUrl });
-    } catch (error) {
-        res.status(500).json({ message: 'Error uploading image' });
-    }
-});
 
 
 export default router;

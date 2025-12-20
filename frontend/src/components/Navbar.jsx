@@ -228,6 +228,15 @@ const Navbar = () => {
                                                 </Link>
 
                                                 <Link
+                                                    to="/settings"
+                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                >
+                                                    <Settings className="h-4 w-4 mr-3 text-gray-400" />
+                                                    Settings
+                                                </Link>
+
+                                                <Link
                                                     to="/wishlist"
                                                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                                     onClick={() => setIsProfileOpen(false)}

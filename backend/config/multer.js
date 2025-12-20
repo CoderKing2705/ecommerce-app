@@ -8,7 +8,8 @@ const createUploadDirs = () => {
         'uploads',
         'uploads/reviews',
         'uploads/products',
-        'uploads/users'
+        'uploads/users',
+        'uploads/profile'
     ];
 
     dirs.forEach(dir => {
@@ -26,7 +27,9 @@ const storage = multer.diskStorage({
         let uploadPath = 'uploads/';
 
         // Determine folder based on route
-        if (req.originalUrl.includes('/reviews')) {
+        if (req.originalUrl.includes('upload-profile-image')) {
+            uploadPath += 'profile/';
+        } else if (req.originalUrl.includes('/reviews')) {
             uploadPath += 'reviews/';
         } else if (req.originalUrl.includes('/products')) {
             uploadPath += 'products/';

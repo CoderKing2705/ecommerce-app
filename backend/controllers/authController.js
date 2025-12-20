@@ -91,7 +91,7 @@ export const login = async (req, res) => {
         );
 
         await updateLastLogin(user.rows[0].id);
-        
+
         res.json({
             token,
             user: {
@@ -109,8 +109,31 @@ export const login = async (req, res) => {
 
 export const getMe = async (req, res) => {
     try {
-        res.json(req.user);
+        const result = await pool.query(
+            `
+            SELECT
+                id,
+                email,
+                name,
+                role,
+                phone,
+                address,
+                city,
+                state,
+                country,
+                postal_code AS "postalCode",
+                notifications,
+                profile_image AS "profileImage",
+                last_activity
+            FROM users
+            WHERE id = $1
+            `,
+            [req.user.id]
+        );
+
+        res.json(result.rows[0]);
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch user' });
     }
 };

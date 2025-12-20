@@ -32,6 +32,7 @@ import ShippingAddresses from './components/ShippingAddresses';
 import AccountSettings from './pages/AccountSettings';
 import BillingAddresses from './pages/BillingAddresses';
 import OrderTracking from './pages/OrderTracking';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -222,6 +223,15 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <BillingAddresses />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
                     </ProtectedRoute>
                   }
                 />

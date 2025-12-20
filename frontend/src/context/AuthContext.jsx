@@ -11,6 +11,16 @@ export const useAuth = () => {
     return context;
 };
 
+const normalizeUser = (u) => {
+    if (!u) return null;
+
+    return {
+        ...u,
+        profileImage: u.profile_image,   // 🔥 THIS IS THE KEY FIX
+    };
+};
+
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -66,6 +76,16 @@ export const AuthProvider = ({ children }) => {
         };
     }, [user, resetInactivityTimer]);
 
+
+    const refreshUser = useCallback(async () => {
+        try {
+            const response = await axios.get('/auth/me');
+            setUser(response.data);
+        } catch (error) {
+            console.error('Failed to refresh user', error);
+        }
+    }, []);
+
     const verifyToken = useCallback(async () => {
         const token = localStorage.getItem('token');
 
@@ -79,7 +99,8 @@ export const AuthProvider = ({ children }) => {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
             const response = await axios.get('/auth/me');
-            setUser(response.data);
+            // setUser(response.data);
+            setUser(normalizeUser(response.data));
             setSessionExpired(false);
         } catch (error) {
             handleAuthError(error);
@@ -142,7 +163,8 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-            setUser(userData);
+            // setUser(userData);
+            setUser(normalizeUser(userData));
             setSessionExpired(false);
             resetInactivityTimer();
             return { success: true, user: userData };
@@ -164,7 +186,8 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-            setUser(userData);
+            // setUser(userData);
+            setUser(normalizeUser(userData));
             setSessionExpired(false);
             resetInactivityTimer();
             return { success: true, user: userData };
@@ -192,16 +215,19 @@ export const AuthProvider = ({ children }) => {
         window.location.href = 'http://localhost:5000/api/auth/google';
     };
 
+
     const value = {
         user,
+        setUser,
         login,
         register,
         logout,
+        refreshUser,
         handleGoogleAuth,
         loading,
         sessionExpired,
         setSessionExpired,
-        resetInactivityTimer
+        resetInactivityTimer,
     };
 
     return (

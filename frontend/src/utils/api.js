@@ -222,4 +222,23 @@ export const checkoutAPI = {
     setDefaultBillingAddress: (id) => api.put(`/billing-addresses/${id}/default`),
 };
 
+// export const settingsAPI = {
+//     updateProfile: (data) => api.put('/auth/profile', data),
+//     changePassword: (data) => api.put('/auth/change-password', data),
+//     uploadProfileImage: (formData, onUploadProgress) =>
+//         api.post('/auth/upload-profile-image', formData, {
+//             headers: { 'Content-Type': 'multipart/form-data' },
+//             onUploadProgress,
+//         }),
+// };
+
+export const settingsAPI = {
+    updateProfile: (data) => api.put('/auth/profile', data),
+    uploadProfileImage: (formData) =>
+        api.post('/auth/upload-profile-image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+};
+
+
 export default api;
