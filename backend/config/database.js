@@ -21,6 +21,9 @@ const pool = new Pool({
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
     max: 20,
+    ssl:{
+        rejectUnauthorized: false
+    }
 });
 
 export const connectDB = async () => {
